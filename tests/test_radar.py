@@ -1,7 +1,7 @@
+import json
 import os
 import sys
 import unittest
-from datetime import date
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import radar
@@ -14,19 +14,10 @@ HN_PAYLOAD = {"hits": [
     {"objectID": "3", "title": "没有外链的", "points": 200, "num_comments": 5},
 ]}
 
-GH_ITEMS = {"items": [
-    {"full_name": "a/one", "html_url": "https://github.com/a/one",
-     "stargazers_count": 500, "description": "一"},
-    {"full_name": "b/two", "html_url": "https://github.com/b/two",
-     "stargazers_count": 900, "description": "二"},
-]}
-
-RELEASE = {"tag_name": "v1.2.3", "html_url": "https://github.com/x/y/releases/tag/v1.2.3",
-           "published_at": "2026-09-13T10:00:00Z", "name": "修了点东西"}
-
 
 def scripted(mapping, errors=()):
-    """按 URL 子串返回预设结果;命中 errors 里的子串则抛错。"""
+    """按 URL 子串返回预设**文本**(取数器统一返回文本,JSON 由调用方解);
+    命中 errors 里的子串则抛错。"""
     seen = []
 
     def get(url):
@@ -36,7 +27,7 @@ def scripted(mapping, errors=()):
                 raise RuntimeError(f"boom {frag}")
         for frag, payload in mapping.items():
             if frag in url:
-                return payload
+                return payload if isinstance(payload, str) else json.dumps(payload)
         raise AssertionError(f"没有为 {url} 准备返回")
 
     get.seen = seen
@@ -68,69 +59,127 @@ class TestHN(unittest.TestCase):
         self.assertEqual(radar.fetch_hn(get=scripted({"hn.algolia": {"hits": []}})), [])
 
 
-class TestGithub(unittest.TestCase):
-    def test_queries_each_language_and_merges_sorted(self):
-        get = scripted({"search/repositories": GH_ITEMS})
-        rows = radar.fetch_github_trending(get=get, languages=("python", "typescript"),
-                                           today=date(2026, 9, 14))
-        self.assertEqual(len(get.seen), 2)
-        self.assertEqual([r["score"] for r in rows], [900, 900, 500, 500])
+TRENDING_HTML = """
+<article class="Box-row">
+  <h2 class="h3 lh-condensed">
+    <a data-hydro-click="{&quot;x&quot;:1}" href="/owner/slow">owner/slow</a>
+  </h2>
+  <p class="col-9 color-fg-muted">一个 &amp; 符号</p>
+  <a href="/owner/slow/stargazers" class="x"><svg>s</svg> 1,200</a>
+  <span>50 stars today</span>
+</article>
+<article class="Box-row">
+  <h2 class="h3 lh-condensed">
+    <a data-hydro-click="{}" href="/owner/hot">owner/hot</a>
+  </h2>
+  <a href="/owner/hot/stargazers" class="x"><svg>s</svg> 900</a>
+  <span>2,600 stars today</span>
+</article>
+"""
 
-    def test_one_language_failing_does_not_kill_the_other(self):
-        """与 market.py 按天隔离、run.collect 按人隔离是同一个判例:
-        容错粒度必须在循环体内。"""
-        def get(url):
-            if "language:python" in url or "language%3Apython" in url:
-                raise RuntimeError("rate limited")
-            return GH_ITEMS
+RELEASES_ATOM = """<feed><entry>
+  <title>v1.2.3</title>
+  <updated>2026-09-13T10:00:00Z</updated>
+  <link rel="alternate" href="https://github.com/x/y/releases/tag/v1.2.3"/>
+</entry><entry>
+  <title>v1.2.2</title><updated>2026-09-01T10:00:00Z</updated>
+</entry></feed>"""
 
-        rows = radar.fetch_github_trending(get=get, languages=("python", "typescript"),
-                                           today=date(2026, 9, 14))
-        self.assertEqual(len(rows), 2)
 
-    def test_release_row_shape(self):
-        rows = radar.fetch_github_releases(get=scripted({"releases/latest": RELEASE}),
-                                           repos=("x/y",))
+class TestGithubTrending(unittest.TestCase):
+    def test_href_is_not_the_first_attribute_on_the_anchor(self):
+        """<a> 上 data-hydro-click 排在 href 前面,直接接 `<a href=` 匹配不到 ——
+        线上就是这么解析出 0 行的。"""
+        rows = radar.parse_trending(TRENDING_HTML)
+        self.assertEqual({r["title"] for r in rows}, {"owner/slow", "owner/hot"})
+
+    def test_sorted_by_stars_gained_today_not_total(self):
+        rows = radar.fetch_github_trending(get=scripted({"github.com/trending": TRENDING_HTML}))
+        self.assertEqual([r["title"] for r in rows], ["owner/hot", "owner/slow"])
+
+    def test_star_count_survives_the_svg_between_link_and_number(self):
+        rows = radar.parse_trending(TRENDING_HTML)
+        slow = next(r for r in rows if r["title"] == "owner/slow")
+        self.assertEqual(slow["score"], 1200)
+        self.assertEqual(slow["today"], 50)
+
+    def test_description_entities_are_unescaped(self):
+        slow = next(r for r in radar.parse_trending(TRENDING_HTML) if r["title"] == "owner/slow")
+        self.assertEqual(slow["note"], "一个 & 符号")
+
+    def test_parsing_nothing_raises_instead_of_returning_empty(self):
+        """GitHub 会改版这个页面。静默返回空会被读成「今天没有 trending」,
+        一个坏掉的源就这么消失几个月。"""
+        with self.assertRaises(ValueError):
+            radar.parse_trending("<html>改版了</html>")
+
+    def test_does_not_touch_api_github_com(self):
+        """api.github.com 在云沙盒里被代理整个拦掉,带不带 token 都 403。"""
+        get = scripted({"github.com/trending": TRENDING_HTML})
+        radar.fetch_github_trending(get=get)
+        self.assertTrue(get.seen)
+        for url in get.seen:
+            self.assertNotIn("api.github.com", url)
+
+
+class TestGithubReleases(unittest.TestCase):
+    def test_takes_only_the_newest_entry(self):
+        rows = radar.parse_releases_atom(RELEASES_ATOM, "x/y")
+        self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["title"], "x/y v1.2.3")
         self.assertEqual(rows[0]["published"], "2026-09-13")
+        self.assertEqual(rows[0]["url"], "https://github.com/x/y/releases/tag/v1.2.3")
 
-    def test_release_without_tag_is_skipped(self):
-        rows = radar.fetch_github_releases(get=scripted({"releases/latest": {}}),
-                                           repos=("x/y",))
-        self.assertEqual(rows, [])
+    def test_empty_feed_is_not_an_error(self):
+        self.assertEqual(radar.parse_releases_atom("<feed></feed>", "x/y"), [])
 
     def test_one_repo_failing_does_not_kill_the_other(self):
-        get = scripted({"releases/latest": RELEASE}, errors=("x/y",))
-        rows = radar.fetch_github_releases(get=get, repos=("x/y", "a/b"))
+        get = scripted({"releases.atom": RELEASES_ATOM}, errors=("anthropics",))
+        rows = radar.fetch_github_releases(
+            get=get, repos=("anthropics/claude-code", "openai/openai-python"))
         self.assertEqual(len(rows), 1)
+
+    def test_uses_the_atom_feed_not_the_api(self):
+        get = scripted({"releases.atom": RELEASES_ATOM})
+        radar.fetch_github_releases(get=get, repos=("x/y",))
+        self.assertEqual(get.seen, ["https://github.com/x/y/releases.atom"])
+
+
+PG_INDEX = '<html><a href="powerful.html">Making Startups Powerful</a></html>'
+
+
+def ALL_SOURCES(url):
+    """一个取数器喂四种载荷。"""
+    if "hn.algolia" in url:
+        return json.dumps(HN_PAYLOAD)
+    if "github.com/trending" in url:
+        return TRENDING_HTML
+    if "releases.atom" in url:
+        return RELEASES_ATOM
+    if "articles.html" in url:
+        return PG_INDEX
+    return "September 2026"
 
 
 class TestBuildRadar(unittest.TestCase):
     def test_merges_every_source(self):
-        get = scripted({"hn.algolia": HN_PAYLOAD, "search/repositories": GH_ITEMS,
-                        "releases/latest": RELEASE})
-        pg_index = '<html><a href="powerful.html">Making Startups Powerful</a></html>'
-        r = radar.build_radar(get=get,
-                              pg_get=lambda u: pg_index if "articles" in u else "September 2026")
+        """一个注入的 get 服务全部四个源:HN 是 JSON、trending 是 HTML、
+        releases 是 Atom、PG 是 HTML —— 取数器统一返回文本才做得到。"""
+        r = radar.build_radar(get=ALL_SOURCES)
         self.assertEqual(sorted(r),
                          ["github_releases", "github_trending", "hn", "paulgraham"])
         self.assertTrue(all(r.values()))
 
-    def test_pg_uses_its_own_injection_point(self):
-        """本模块的 get 返回已解析的 JSON,PG 那条要的是 HTML 文本 ——
-        合成一个注入点会让其中一边永远解析失败。"""
-        get = scripted({"hn.algolia": HN_PAYLOAD, "search/repositories": GH_ITEMS,
-                        "releases/latest": RELEASE})
-        r = radar.build_radar(get=get)          # 注入了 get 但没给 pg_get
-        self.assertEqual(r["paulgraham"], [])   # 整条跳过,不落回默认取数器
-        self.assertTrue(r["hn"])
-
     def test_one_source_down_leaves_the_others(self):
-        get = scripted({"search/repositories": GH_ITEMS, "releases/latest": RELEASE},
-                       errors=("hn.algolia",))
+        def get(url):
+            if "hn.algolia" in url:
+                raise RuntimeError("down")
+            return ALL_SOURCES(url)
+
         r = radar.build_radar(get=get)
         self.assertEqual(r["hn"], [])
         self.assertTrue(r["github_trending"])
+        self.assertTrue(r["paulgraham"])
 
     def test_everything_down_returns_an_empty_skeleton_not_an_exception(self):
         """榜单是补充品,必须降级。这与 publish.upload_r2 必须抛错是刻意相反的:

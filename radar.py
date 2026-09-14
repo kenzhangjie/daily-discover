@@ -8,19 +8,23 @@
 
 各源的可达性(2026-09-14 实测):
 - HN Algolia  免费无 key,直连可用
-- GitHub 搜索 免费,未认证限流 10 次/分,本模块每次运行只打 3 次
+- GitHub      **不能走 api.github.com**。云沙盒的代理把它整个拦了,带不带 GH_TOKEN
+              都返回代理自己的提示(2026-09-14 线上实测:trending 与 release 四次
+              全部 403)。改走 github.com 上不经过 API 的两条路:
+              releases.atom(标准 Atom,稳)和 /trending(HTML,GitHub 会改版,
+              解析不到要出声而不是静默返回空)
 - Reddit      **未接**。www/old.reddit.com 的 .json 现在一律 403(换浏览器 UA
               也一样),要走 TikHub 的 /api/v1/reddit/app/fetch_subreddit_feed。
               没接是因为拿不到返回结构:key 只在云 routine 的环境变量里。
               接的时候照 tikhub.py 里其他适配器的结构写,别猜字段名。
 """
+import html
 import json
+import re
 import sys
 import time
 import urllib.parse
 import urllib.request
-
-from datetime import date, timedelta
 
 import blogs
 
@@ -32,13 +36,12 @@ HN_MIN_POINTS = 150          # 降噪:24h 内不到这个分数的不看
 HN_TOP_N = 10
 HN_HOURS = 24
 
-GH_SEARCH = "https://api.github.com/search/repositories"
-GH_RELEASES = "https://api.github.com/repos/{}/releases/latest"
-GH_MIN_STARS = 200
-GH_LANGUAGES = ("python", "typescript")
-GH_TRENDING_DAYS = 7         # 「近期新建且已达 min_stars」,不是 GitHub 官方的 trending
-GH_PER_LANG = 5
+GH_TRENDING = "https://github.com/trending?since=daily&spoken_language_code="
+GH_RELEASES = "https://github.com/{}/releases.atom"
+GH_TRENDING_TOP_N = 8
 GH_WATCH_REPOS = ("anthropics/claude-code", "openai/openai-python")
+BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
 
 
 def _warn(msg):
@@ -46,10 +49,17 @@ def _warn(msg):
 
 
 def _default_get(url):
-    """带 UA。GitHub 对空 UA 直接 403,HN 不挑但统一带着。"""
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    """**返回文本,不是解析好的 JSON。**
+
+    本模块有三种载荷:HN 是 JSON、releases 是 Atom、trending 是 HTML。
+    让取数器统一返回文本、由各自的解析函数决定怎么读,就只需要一个注入点 ——
+    否则注入一个 get 就得同时满足两种消费者,必有一边解析失败。
+
+    带 UA:GitHub 对空 UA 直接 403,HN 不挑但统一带着。"""
+    ua = BROWSER_UA if "github.com/trending" in url else USER_AGENT
+    req = urllib.request.Request(url, headers={"User-Agent": ua})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8", "replace"))
+        return resp.read().decode("utf-8", "replace")
 
 
 def fetch_hn(get=None, min_points=HN_MIN_POINTS, top_n=HN_TOP_N, hours=HN_HOURS,
@@ -61,7 +71,7 @@ def fetch_hn(get=None, min_points=HN_MIN_POINTS, top_n=HN_TOP_N, hours=HN_HOURS,
         "numericFilters": f"points>{int(min_points)},created_at_i>{since}",
         "hitsPerPage": int(top_n),
     })
-    hits = (doer(f"{HN_API}?{q}") or {}).get("hits") or []
+    hits = (json.loads(doer(f"{HN_API}?{q}")) or {}).get("hits") or []
     out = []
     for h in hits:
         oid = h.get("objectID")
@@ -78,32 +88,71 @@ def fetch_hn(get=None, min_points=HN_MIN_POINTS, top_n=HN_TOP_N, hours=HN_HOURS,
     return out
 
 
-def fetch_github_trending(get=None, languages=GH_LANGUAGES, min_stars=GH_MIN_STARS,
-                          days=GH_TRENDING_DAYS, per_lang=GH_PER_LANG, today=None):
-    """按语言各查一次。容错粒度在循环体内 —— 一种语言限流不该连累另一种
-    (与 market.py 按天隔离、run.collect 按人隔离是同一个判例)。"""
-    doer = get or _default_get
-    since = ((today or date.today()) - timedelta(days=days)).isoformat()
+def parse_trending(page):
+    """/trending 是 HTML,每个仓库一个 <article class="Box-row">。
+
+    GitHub 会改版这个页面。一行都解析不到时**抛错**而不是返回空列表 ——
+    静默返回空会被读成「今天没有 trending」,一个坏掉的源就这么消失几个月。
+    build_radar 在外层接住并 WARN,榜单块只少这一组,帖子流不受影响。
+    """
+    rows = re.split(r'<article class="Box-row">', page or "")[1:]
     out = []
-    for lang in languages:
-        q = urllib.parse.urlencode({
-            "q": f"created:>{since} stars:>{int(min_stars)} language:{lang}",
-            "sort": "stars", "order": "desc", "per_page": int(per_lang),
-        })
-        try:
-            data = doer(f"{GH_SEARCH}?{q}")
-        except Exception as exc:  # noqa: BLE001
-            _warn(f"github trending {lang} 失败,跳过: {exc}")
+    for block in rows:
+        # <a> 上 data-hydro-click 排在 href 前面,所以不能直接接 <a href=;
+        # 先圈出 <h2> 块,再在块里找第一个仓库链接
+        h2 = re.search(r"<h2[^>]*>(.*?)</h2>", block, re.S)
+        if not h2:
             continue
-        for it in (data or {}).get("items") or []:
-            out.append({
-                "title": it.get("full_name") or "",
-                "url": it.get("html_url") or "",
-                "score": int(it.get("stargazers_count") or 0),
-                "note": (it.get("description") or "")[:120],
-                "lang": lang,
-            })
-    out.sort(key=lambda e: e["score"], reverse=True)
+        m = re.search(r'href="/([^"/]+/[^"?#]+)"', h2.group(1))
+        if not m:
+            continue
+        full = m.group(1).strip()
+        desc = re.search(r'<p class="col-9[^"]*">\s*(.*?)\s*</p>', block, re.S)
+        # star 数在 <a href=".../stargazers" ...> 之后,中间隔着一整个 <svg>
+        stars = re.search(r'href="/[^"]+/stargazers"[^>]*>.*?</svg>\s*([\d,]+)',
+                          block, re.S)
+        today = re.search(r'([\d,]+)\s*stars? today', block)
+        out.append({
+            "title": full,
+            "url": f"https://github.com/{full}",
+            "score": int((stars.group(1) if stars else "0").replace(",", "")),
+            "note": (html.unescape(
+                re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", desc.group(1)))).strip()[:120]
+                if desc else ""),
+            "today": int((today.group(1) if today else "0").replace(",", "")),
+        })
+    if not out:
+        raise ValueError("/trending 一行都没解析出来,GitHub 大概改版了")
+    return out
+
+
+def fetch_github_trending(get=None, top_n=GH_TRENDING_TOP_N):
+    """走 github.com/trending 而不是 api.github.com —— 后者在云沙盒里被代理整个拦掉,
+    带不带 token 都 403(2026-09-14 线上实测,四次全 403)。"""
+    doer = get or _default_get
+    rows = parse_trending(doer(GH_TRENDING))
+    rows.sort(key=lambda e: (e.get("today") or 0, e["score"]), reverse=True)
+    return rows[:top_n]
+
+
+def parse_releases_atom(xml, repo):
+    """releases.atom 是标准 Atom:<entry> 里有 <title>(tag)、<updated>、<link href>。
+    走它而不是 api.github.com/repos/.../releases/latest —— 同样被代理拦。
+    只取最新一个 release:榜单块是「此刻的状态」,历史版本不是。"""
+    entries = re.findall(r"<entry>(.*?)</entry>", xml or "", re.S)
+    out = []
+    for block in entries[:1]:
+        tag = re.search(r"<title>(.*?)</title>", block, re.S)
+        if not tag:
+            continue
+        when = re.search(r"<updated>(.*?)</updated>", block, re.S)
+        link = re.search(r'<link[^>]*href="([^"]+)"', block)
+        out.append({
+            "title": f"{repo} {tag.group(1).strip()}",
+            "url": link.group(1) if link else f"https://github.com/{repo}/releases",
+            "published": when.group(1)[:10] if when else "",
+            "note": "",
+        })
     return out
 
 
@@ -112,47 +161,32 @@ def fetch_github_releases(get=None, repos=GH_WATCH_REPOS):
     out = []
     for repo in repos:
         try:
-            r = doer(GH_RELEASES.format(repo))
-        except Exception as exc:  # noqa: BLE001
+            out.extend(parse_releases_atom(doer(GH_RELEASES.format(repo)), repo))
+        except Exception as exc:  # noqa: BLE001 —— 一个仓库失败不连累另一个
             _warn(f"github release {repo} 失败,跳过: {exc}")
-            continue
-        if not r or not r.get("tag_name"):
-            continue
-        out.append({
-            "title": f"{repo} {r.get('tag_name')}",
-            "url": r.get("html_url") or f"https://github.com/{repo}/releases",
-            "published": (r.get("published_at") or "")[:10],
-            "note": (r.get("name") or "")[:120],
-        })
     return out
 
 
 EMPTY_RADAR = {"hn": [], "github_trending": [], "github_releases": [], "paulgraham": []}
 
 
-def build_radar(get=None, pg_get=None):
+def build_radar(get=None):
     """各源独立容错。全挂就返回空壳 —— 页面上那一块显示「今天没有」,
     帖子流完全不受影响。
 
-    pg_get 单独一个注入点,不能和 get 合并:本模块的 get 返回**已解析的 JSON**,
-    而 Paul Graham 那条抓的是 HTML 文本,同一个 get 喂不了两种消费者。
-
-    **注入了 get 就意味着「不许碰网络」**:这时没给 pg_get 就整条跳过 PG,
-    而不是让它落回默认取数器。否则测试里注入了 get 仍会静默打真实 HTTP ——
-    实测就是这么让整套测试从 0.1s 变成 22s 的。
+    取数器统一返回文本(见 _default_get),所以一个注入的 get 能服务全部四个源,
+    包括 Paul Graham 那条抓 HTML 的。注入了 get 就等于「不许碰网络」,不会有
+    哪一条偷偷落回默认实现。
     """
-    sources = [("hn", fetch_hn, get),
-               ("github_trending", fetch_github_trending, get),
-               ("github_releases", fetch_github_releases, get)]
-    # PG 没有任何可用时间戳,进不了时间线 —— 榜单块本来就是「此刻的状态」
-    # 而不是「最近 36 小时发生了什么」,正好放他
-    if pg_get is not None or get is None:
-        sources.append(("paulgraham", blogs.fetch_pg_latest, pg_get))
-
     radar = dict(EMPTY_RADAR)
-    for key, fn, doer in sources:
+    for key, fn in (("hn", fetch_hn),
+                    ("github_trending", fetch_github_trending),
+                    ("github_releases", fetch_github_releases),
+                    # PG 没有任何可用时间戳,进不了时间线 —— 榜单块本来就是
+                    # 「此刻的状态」而不是「最近 36 小时发生了什么」,正好放他
+                    ("paulgraham", blogs.fetch_pg_latest)):
         try:
-            radar[key] = fn(get=doer)
+            radar[key] = fn(get=get)
         except Exception as exc:  # noqa: BLE001
             _warn(f"榜单 {key} 不可用,跳过(帖子流不受影响): {exc}")
     return radar
