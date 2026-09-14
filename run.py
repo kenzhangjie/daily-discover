@@ -32,13 +32,13 @@ def warn(msg):
     print(f"WARN {msg}", file=sys.stderr)
 
 
-def load_market(here):
+def load_market(here, pm_config=None):
     """打新日历是补充品,帖子流才是主交付 —— 导入/构建失败要降级,不能拖垮已抓到的帖子。"""
     try:
         sys.path.insert(0, os.path.join(here, "..", "ipo-earnings"))
         import fetch_market as fm
         import market as market_mod
-        return market_mod.build_market(fm)
+        return market_mod.build_market(fm, pm_config=pm_config)
     except Exception as e:
         warn(f"市场数据不可用,跳过(帖子流不受影响): {e}")
         return {"polymarket": [], "ipo": []}
@@ -77,7 +77,9 @@ def collect(client, sources, cutoff_iso, fetchers=None):
 def main(argv=None):
     argv = argv or sys.argv[1:]
     here = os.path.dirname(os.path.abspath(__file__))
-    sources = models.load_sources(os.path.join(here, "sources.yaml"))
+    sources_path = os.path.join(here, "sources.yaml")
+    sources = models.load_sources(sources_path)
+    settings = models.load_settings(sources_path)
 
     client = tikhub.TikHub(os.environ.get("TIKHUB_API_KEY"))
     try:
@@ -103,7 +105,7 @@ def main(argv=None):
         stats[ch]["count"] = post_counts.get(ch, 0)
 
     beijing = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
-    market = load_market(here)
+    market = load_market(here, settings.get("polymarket"))
     radar = radar_mod.build_radar()      # 内部逐源容错,全挂返回空壳
     shard = publish.build_shard(beijing, posts, stats, market, radar)
 

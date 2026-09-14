@@ -49,13 +49,18 @@ US_LOOKAHEAD_DAYS = 7  # 跟 A股 upcoming 窗口(今日起 7 天)保持一致
 USER_AGENT = "daily-discover/1.0"
 
 PM_GAMMA = "https://gamma-api.polymarket.com"
-PM_MIN_VOLUME = 10000          # lifetime 成交额低于此值的僵尸市场丢弃
-PM_MAX_PER_KEYWORD = 3
-PM_KEYWORDS = ["anthropic", "claude", "openai", "gpt", "grok", "tiktok",
-               "us china tariff", "bytedance", "tencent", "nvidia", "magnificent"]
-PM_TRENDING_TAGS = ["ai", "stocks", "china", "earnings"]
-PM_TRENDING_TOP_N = 3
-PM_TOTAL_CAP = 12              # 页面上这一块只有十几行的体量,封顶防刷屏
+
+# 下面这些是**默认值**。sources.yaml 的 polymarket: 段可以逐项覆盖 ——
+# 那个文件由 Ken 手改、push 就生效,不用动代码。
+PM_DEFAULTS = {
+    "min_volume": 10000,       # lifetime 成交额低于此值的僵尸市场丢弃
+    "max_per_keyword": 3,
+    "keywords": ["anthropic", "claude", "openai", "gpt", "grok", "tiktok",
+                 "us china tariff", "bytedance", "tencent", "nvidia", "magnificent"],
+    "tags": ["ai", "finance"],  # = polymarket.com/tech/ai 与 polymarket.com/finance
+    "top_n": 3,
+    "total_cap": 12,           # 页面上这一块只有十几行的体量,封顶防刷屏
+}
 
 
 def _warn(msg):
@@ -74,7 +79,7 @@ def _pm_parse_prices(raw):
         return []
 
 
-def _pm_event_entry(event):
+def _pm_event_entry(event, min_volume):
     """一个 event -> (lifetime_volume, entry) 或 None(没有合法的代表 market)。
 
     每个 event 只取一个代表 market:开放且 active、volumeNum 最高、且
@@ -93,7 +98,7 @@ def _pm_event_entry(event):
         if not prices:
             continue
         vol_total = float(m.get("volumeNum") or 0)
-        if vol_total < PM_MIN_VOLUME:
+        if vol_total < min_volume:
             continue
         if best is None or vol_total > best[0]:
             best = (vol_total, m, prices)
@@ -122,45 +127,68 @@ def _pm_default_get(url):
         return resp.read()
 
 
-def fetch_polymarket(get=None):
-    """拉 Polymarket 两种视图:关键词监控(Mode A)+ 趋势榜(Mode B)。
+def _pm_cfg(config):
+    """配置逐项覆盖默认值。**类型不对的一律忽略并告警** —— YAML 手写很容易把
+    列表写成字符串(`tags: ai` 而不是 `tags: [ai]`),那样遍历会按字符拆开,
+    变成一个个单字母的 tag_slug,静默拉回一堆空结果。"""
+    cfg = dict(PM_DEFAULTS)
+    for key, val in (config or {}).items():
+        if key not in PM_DEFAULTS:
+            _warn(f"polymarket 配置里有不认识的项 {key!r},忽略")
+            continue
+        if not isinstance(val, type(PM_DEFAULTS[key])):
+            _warn(f"polymarket 配置项 {key!r} 类型不对"
+                  f"(要 {type(PM_DEFAULTS[key]).__name__},给的是 {type(val).__name__}),"
+                  f"用默认值")
+            continue
+        cfg[key] = val
+    return cfg
 
-    容错粒度在每个关键词 / 每个 tag 的循环体内 —— 一个失败 _warn 后
-    continue,不影响其余的(呼应美股财报日历按天隔离容错的同一设计)。
+
+def fetch_polymarket(get=None, config=None):
+    """拉 Polymarket 两种视图:关键词监控(Mode A)+ 分类榜(Mode B)。
+
+    Mode B 的 tag 就是网站上的分类页:`polymarket.com/tech/ai` → `tag_slug=ai`,
+    `polymarket.com/finance` → `tag_slug=finance`(2026-09-14 实测两个都返回结果)。
+
+    容错粒度在每个关键词 / 每个 tag 的循环体内 —— 一个失败 _warn 后 continue,
+    不影响其余的(呼应美股财报日历按天隔离容错的同一设计)。
     """
+    cfg = _pm_cfg(config)
     doer = get or _pm_default_get
     entries, seen_urls = [], set()
 
-    for kw in PM_KEYWORDS:
+    for kw in cfg["keywords"]:
         try:
-            url = f"{PM_GAMMA}/public-search?q={urllib.parse.quote(kw)}&limit_per_type=20"
+            url = f"{PM_GAMMA}/public-search?q={urllib.parse.quote(str(kw))}&limit_per_type=20"
             events = json.loads(doer(url)).get("events") or []
         except Exception as e:  # noqa: BLE001 —— 单个关键词失败不拖垮其余关键词
             _warn(f"polymarket 关键词 {kw!r} 请求失败,跳过: {e}")
             continue
-        ranked = [r for r in (_pm_event_entry(ev) for ev in events) if r]
+        ranked = [r for r in (_pm_event_entry(ev, cfg["min_volume"]) for ev in events) if r]
         ranked.sort(key=lambda r: r[0], reverse=True)
-        for _, entry in ranked[:PM_MAX_PER_KEYWORD]:
+        for _, entry in ranked[:cfg["max_per_keyword"]]:
             if entry["url"] in seen_urls:
                 continue
             seen_urls.add(entry["url"])
             entries.append(entry)
 
-    for tag in PM_TRENDING_TAGS:
+    for tag in cfg["tags"]:
         try:
-            url = (f"{PM_GAMMA}/events?closed=false&active=true&tag_slug={tag}"
+            url = (f"{PM_GAMMA}/events?closed=false&active=true"
+                   f"&tag_slug={urllib.parse.quote(str(tag))}"
                    "&order=volume24hr&ascending=false&limit=30")
             events = json.loads(doer(url))
             if not isinstance(events, list):
                 events = []
         except Exception as e:  # noqa: BLE001 —— 单个 tag 失败不拖垮其余 tag
-            _warn(f"polymarket 趋势标签 {tag!r} 请求失败,跳过: {e}")
+            _warn(f"polymarket 分类 {tag!r} 请求失败,跳过: {e}")
             continue
         taken = 0
         for ev in events:
-            if taken >= PM_TRENDING_TOP_N:
+            if taken >= cfg["top_n"]:
                 break
-            r = _pm_event_entry(ev)
+            r = _pm_event_entry(ev, cfg["min_volume"])
             if r is None:
                 continue
             taken += 1
@@ -171,10 +199,10 @@ def fetch_polymarket(get=None):
             entries.append(entry)
 
     entries.sort(key=lambda e: e["vol24"], reverse=True)
-    return entries[:PM_TOTAL_CAP]
+    return entries[:cfg["total_cap"]]
 
 
-def build_market(fm, polymarket=None):
+def build_market(fm, polymarket=None, pm_config=None):
     ipo = []
     try:
         a_result = fm.fetch_a_ipo(fm.beijing_today()) or {}
@@ -222,7 +250,7 @@ def build_market(fm, polymarket=None):
 
     if polymarket is None:
         try:
-            polymarket = fetch_polymarket()
+            polymarket = fetch_polymarket(config=pm_config)
         except Exception as e:  # noqa: BLE001 —— 补充品,全挂了就降级为空
             _warn(f"polymarket 整体失败,降级为空: {e}")
             polymarket = []

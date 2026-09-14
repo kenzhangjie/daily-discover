@@ -99,7 +99,7 @@ class TestBuildMarket(unittest.TestCase):
         # 验证 build_market 确实委托给了 fetch_polymarket。
         with mock.patch.object(market, "fetch_polymarket", return_value=[{"q": "x"}]) as m_fetch:
             m = market.build_market(FakeFM)
-        m_fetch.assert_called_once_with()
+        m_fetch.assert_called_once_with(config=None)
         self.assertEqual(m["polymarket"], [{"q": "x"}])
 
     def test_polymarket_explicit_empty_list_skips_fetch(self):
@@ -264,7 +264,7 @@ def _make_pm_get(keyword_events=None, tag_events=None, keyword_errors=None, tag_
 
 class TestFetchPolymarket(unittest.TestCase):
     def test_picks_highest_volume_submarket_per_event(self):
-        kw = market.PM_KEYWORDS[0]
+        kw = market.PM_DEFAULTS["keywords"][0]
         markets = [
             _pm_market(volumeNum=5000, question="low"),
             _pm_market(volumeNum=90000, question="high"),
@@ -276,14 +276,14 @@ class TestFetchPolymarket(unittest.TestCase):
         self.assertEqual(entries[0]["q"], "high")
 
     def test_outcome_prices_json_string_parsed(self):
-        kw = market.PM_KEYWORDS[0]
+        kw = market.PM_DEFAULTS["keywords"][0]
         get = _make_pm_get(keyword_events={
             kw: [_pm_event(markets=[_pm_market(outcomePrices='["0.85","0.15"]')])]})
         entries = market.fetch_polymarket(get=get)
         self.assertEqual(entries[0]["yes"], 85)
 
     def test_chg24_and_vol24_coerced(self):
-        kw = market.PM_KEYWORDS[0]
+        kw = market.PM_DEFAULTS["keywords"][0]
         get = _make_pm_get(keyword_events={
             kw: [_pm_event(markets=[_pm_market(oneDayPriceChange=0.065, volume24hr=None)])]})
         entries = market.fetch_polymarket(get=get)
@@ -291,14 +291,14 @@ class TestFetchPolymarket(unittest.TestCase):
         self.assertEqual(entries[0]["vol24"], 0)
 
     def test_below_min_volume_not_produced(self):
-        kw = market.PM_KEYWORDS[0]
+        kw = market.PM_DEFAULTS["keywords"][0]
         get = _make_pm_get(keyword_events={
-            kw: [_pm_event(markets=[_pm_market(volumeNum=market.PM_MIN_VOLUME - 1)])]})
+            kw: [_pm_event(markets=[_pm_market(volumeNum=market.PM_DEFAULTS["min_volume"] - 1)])]})
         entries = market.fetch_polymarket(get=get)
         self.assertEqual(entries, [])
 
     def test_one_keyword_failure_does_not_block_others(self):
-        kw_bad, kw_good = market.PM_KEYWORDS[0], market.PM_KEYWORDS[1]
+        kw_bad, kw_good = market.PM_DEFAULTS["keywords"][0], market.PM_DEFAULTS["keywords"][1]
         get = _make_pm_get(
             keyword_events={kw_good: [_pm_event(slug="good-event")]},
             keyword_errors={kw_bad})
@@ -306,15 +306,15 @@ class TestFetchPolymarket(unittest.TestCase):
         self.assertEqual(len(entries), 1)
 
     def test_same_event_dedup_across_keywords(self):
-        kw1, kw2 = market.PM_KEYWORDS[0], market.PM_KEYWORDS[1]
+        kw1, kw2 = market.PM_DEFAULTS["keywords"][0], market.PM_DEFAULTS["keywords"][1]
         same_event = [_pm_event(slug="same-event")]
         get = _make_pm_get(keyword_events={kw1: same_event, kw2: same_event})
         entries = market.fetch_polymarket(get=get)
         self.assertEqual(len(entries), 1)
 
     def test_all_requests_failing_returns_empty_list(self):
-        get = _make_pm_get(keyword_errors=set(market.PM_KEYWORDS),
-                            tag_errors=set(market.PM_TRENDING_TAGS))
+        get = _make_pm_get(keyword_errors=set(market.PM_DEFAULTS["keywords"]),
+                            tag_errors=set(market.PM_DEFAULTS["tags"]))
         entries = market.fetch_polymarket(get=get)
         self.assertEqual(entries, [])
 
@@ -344,6 +344,66 @@ class TestPolymarketDefaultGet(unittest.TestCase):
             market._pm_default_get("https://example.invalid/x")
 
         self.assertTrue(captured[0].get_header("User-agent"))
+
+
+class TestPolymarketConfig(unittest.TestCase):
+    """polymarket 的配置搬进了 sources.yaml,由 Ken 手改。手改的东西要防手滑。"""
+
+    def test_defaults_used_when_no_config(self):
+        cfg = market._pm_cfg(None)
+        self.assertEqual(cfg, market.PM_DEFAULTS)
+
+    def test_config_overrides_item_by_item(self):
+        cfg = market._pm_cfg({"tags": ["ai", "finance"], "top_n": 5})
+        self.assertEqual(cfg["tags"], ["ai", "finance"])
+        self.assertEqual(cfg["top_n"], 5)
+        # 没给的项保持默认
+        self.assertEqual(cfg["keywords"], market.PM_DEFAULTS["keywords"])
+
+    def test_string_instead_of_list_falls_back_to_default(self):
+        """YAML 里写 `tags: ai` 而不是 `tags: [ai]` 是最容易犯的手滑。
+        字符串遍历会按字符拆开,变成 a、i 两个单字母 tag_slug,
+        静默拉回一堆空结果 —— 必须挡住并用默认值。"""
+        cfg = market._pm_cfg({"tags": "ai"})
+        self.assertEqual(cfg["tags"], market.PM_DEFAULTS["tags"])
+
+    def test_unknown_key_is_ignored(self):
+        cfg = market._pm_cfg({"tag": ["ai"]})       # 少写了 s
+        self.assertEqual(cfg["tags"], market.PM_DEFAULTS["tags"])
+
+    def test_tags_drive_the_request_url(self):
+        seen = []
+
+        def get(url):
+            seen.append(url)
+            return json.dumps({"events": []} if "public-search" in url else [])
+
+        market.fetch_polymarket(get=get, config={"keywords": [], "tags": ["ai", "finance"]})
+        tag_urls = [u for u in seen if "tag_slug=" in u]
+        self.assertEqual(len(tag_urls), 2)
+        self.assertTrue(any("tag_slug=ai" in u for u in tag_urls))
+        self.assertTrue(any("tag_slug=finance" in u for u in tag_urls))
+
+    def test_min_volume_from_config_filters_markets(self):
+        ev = {"slug": "e", "markets": [{"question": "q", "outcomePrices": '["0.5","0.5"]',
+                                        "volumeNum": 5000, "volume24hr": 100}]}
+        self.assertIsNone(market._pm_event_entry(ev, 10000))
+        self.assertIsNotNone(market._pm_event_entry(ev, 1000))
+
+    def test_build_market_passes_config_through(self):
+        seen = {}
+
+        def fake_fetch(get=None, config=None):
+            seen["config"] = config
+            return []
+
+        orig = market.fetch_polymarket
+        market.fetch_polymarket = fake_fetch
+        try:
+            market.build_market(FakeFM(), pm_config={"tags": ["finance"]})
+        finally:
+            market.fetch_polymarket = orig
+        self.assertEqual(seen["config"], {"tags": ["finance"]})
 
 
 if __name__ == "__main__":

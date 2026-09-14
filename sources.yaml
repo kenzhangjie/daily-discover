@@ -91,6 +91,36 @@ blog:
   # 无 RSS,正文只有「September 2026」月粒度),进不了需要 36h 截断的时间线。
   # 他在榜单块里,见 radar.py 的 paulgraham 段。
 
+# ── 不是「关注的人」,是预测市场的配置 ────────────────────────────────
+polymarket:
+  # Mode A:关键词监控。按事件标题搜,每个词最多留 max_per_keyword 个
+  keywords:
+    - anthropic
+    - claude
+    - openai
+    - gpt
+    - grok
+    - tiktok
+    - us china tariff
+    - bytedance
+    - tencent
+    - nvidia
+    - magnificent
+  max_per_keyword: 3
+
+  # Mode B:分类榜。tag 就是网站分类页 URL 的最后一段:
+  #   https://polymarket.com/tech/ai   → ai
+  #   https://polymarket.com/finance   → finance
+  # 每个分类按 24h 成交额取前 top_n 个
+  # ⚠️ 必须写成列表(前面带 - ),写成 `tags: ai` 会被按单个字符拆开
+  tags:
+    - ai
+    - finance
+  top_n: 3
+
+  min_volume: 10000   # lifetime 成交额低于此值的僵尸市场丢弃
+  total_cap: 12       # 页面上这一块总共只显示这么多行
+
 # linkedin: 暂缺。2026-09-13 实测 TikHub 的 LinkedIn 全线 400(响应明示不扣费),
 #   证据在 tests/fixtures/linkedin_400_blocked.json。TikHub 修好后加回本节即可,
 #   适配器工作量约等于小红书那个。

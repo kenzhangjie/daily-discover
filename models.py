@@ -9,6 +9,10 @@ TWITTER_FMT = "%a %b %d %H:%M:%S %z %Y"
 
 CHANNELS = ("twitter", "xueqiu", "xhs", "wechat", "rss", "podcast", "blog")
 
+# sources.yaml 里不是「关注的人」的段落。放在同一个文件里是因为它们同样由 Ken
+# 手改、同样靠 push 生效;但它们不是渠道,load_sources 要跳过而不是报「未知渠道」。
+SETTINGS_KEYS = ("polymarket",)
+
 
 def _yaml():
     """名单用 YAML 而非 JSON —— 这个文件是 Ken 手改的,注释和不带引号的中文
@@ -32,6 +36,8 @@ def load_sources(path: str) -> dict:
         raise ValueError("sources 顶层必须是对象")
     out = {}
     for channel, people in raw.items():
+        if channel in SETTINGS_KEYS:
+            continue
         if channel not in CHANNELS:
             raise ValueError(f"未知渠道 {channel!r},只支持 {CHANNELS}")
         if not isinstance(people, list):
@@ -41,6 +47,19 @@ def load_sources(path: str) -> dict:
                 raise ValueError(f"{channel} 下有条目缺 id: {entry!r}")
         out[channel] = people
     return out
+
+
+def load_settings(path: str) -> dict:
+    """读 sources.yaml 里的非渠道配置段(见 SETTINGS_KEYS)。
+    缺段或读不到都返回空 dict —— 调用方各自有默认值,不该因为配置缺失而崩。"""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            raw = _yaml().safe_load(fh) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    return {k: v for k, v in raw.items() if k in SETTINGS_KEYS and isinstance(v, dict)}
 
 
 def to_utc_iso(value: Any) -> str:
