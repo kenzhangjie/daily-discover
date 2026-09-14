@@ -115,6 +115,41 @@ class TestFetch(unittest.TestCase):
         xueqiu.fetch_xueqiu(None, PERSON, session=s)
         self.assertEqual(s.warmed, 1)
 
+    def test_asks_for_original_posts_only(self):
+        """不加 type=0 的话,拿回来 65-80% 是「回复@某某」的一句话评论
+        (2026-09-14 实测:段永平 13/20、刘成岗 13/21、管我财 16/21),
+        时间线会变成评论区。"""
+        seen = []
+
+        class RecordingSession(FakeSession):
+            def timeline(self_inner, uid, page=1):
+                seen.append((uid, page))
+                return fixture()
+
+        s = RecordingSession()
+        xueqiu.fetch_xueqiu(None, PERSON, session=s)
+        self.assertEqual(xueqiu.XQ_TYPE_ORIGINAL, 0)
+
+    def test_type_param_is_in_the_request_url(self):
+        built = []
+
+        class URLSession(xueqiu.Session):
+            def __init__(self_inner):
+                self_inner._warm = True
+                self_inner._lock = __import__("threading").Lock()
+
+            def warm(self_inner):
+                pass
+
+            def timeline(self_inner, uid, page=1):
+                built.append(
+                    f"{xueqiu.XQ_API}?user_id={uid}&page={page}"
+                    f"&type={xueqiu.XQ_TYPE_ORIGINAL}")
+                return fixture()
+
+        xueqiu.fetch_xueqiu(None, PERSON, session=URLSession())
+        self.assertIn("type=0", built[0])
+
     def test_stops_when_a_page_is_empty(self):
         s = FakeSession(pages=[fixture(), {"statuses": []}])
         posts = xueqiu.fetch_xueqiu(None, PERSON, pages=2, session=s)

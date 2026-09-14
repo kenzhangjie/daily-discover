@@ -28,6 +28,12 @@ XQ_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 PAGES = 1                 # 每人一页 20 条,够覆盖 36h 窗口
 TIMEOUT = 25
 
+# type=0 是「原发布」。默认的 type=10(全部)里有 65-80% 是「回复@某某」的
+# 一句话评论 —— 2026-09-14 实测:段永平 13/20、刘成岗 13/21、管我财 16/21。
+# 那些淹进时间线会把整个页面变成评论区,而 type=0 拿到的条数并不少(还是 20 条),
+# 等于白拿更多原创。
+XQ_TYPE_ORIGINAL = 0
+
 _TAG_RE = re.compile(r"<[^>]+>")
 
 
@@ -57,7 +63,7 @@ class Session:
             self._warm = True
 
     def timeline(self, uid, page=1):
-        url = f"{XQ_API}?user_id={uid}&page={page}"
+        url = f"{XQ_API}?user_id={uid}&page={page}&type={XQ_TYPE_ORIGINAL}"
         req = urllib.request.Request(url, headers={
             "User-Agent": XQ_UA,
             "Referer": f"https://xueqiu.com/u/{uid}",
