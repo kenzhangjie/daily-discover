@@ -56,12 +56,25 @@ xueqiu:
 xhs:
   # id = 小红书用户 id(24 位十六进制)。主页 URL xiaohongshu.com/user/profile/<id>
   # ⚠️ 下面这条是占位的测试数据,不是你指定的 —— 换成真人或整段删掉
-  - {id: "61b46d790000000010008153", name: "JeremyLin林书豪", note: "占位,待换"}
+  - {id: "6065978600000000010076c6", name: "大卫翁", note: "大卫翁"}
+  - {id: "5d44e926000000001100d215", name: "参考答案阅览室", note: "参考答案阅览室"}
+  - {id: "5597b4c562a60c59483354e2", name: "Vivi女士在创业", note: "Vivi女士在创业"}
+  - {id: "606114450000000001000fd5", name: "朱哲清Bill", note: "朱哲清Bill"}
+  - {id: "64055dbc0000000029017fe7", name: "硬地骇客", note: "硬地骇客"}
+
 
 wechat:
   # id = 公众号的 gh_ 开头原始 id,或账号名
   # ⚠️ 同样是占位数据
-  - {id: "gh_363b924965e9", name: "人民日报", note: "占位,待换"}
+  - {id: "gh_00eb01f8cbff", name: "Monolith砺思资本", note: "Monolith砺思资本"}
+  - {id: "gh_56d462c1a72f", name: "Z Potentials", note: "Z Potentials"}
+  - {id: "gh_62c02a7947f7", name: "随机小分队", note: "随机小分队"}
+  - {id: "gh_6990113d8818", name: "语言即世界language is world", note: "语言即世界language is world"}
+  - {id: "gh_3e5d3b151ac4", name: "42章经", note: "42章经"}
+  - {id: "gh_8a38f53d29c0", name: "INDIGO数字镜像", note: "INDIGO数字镜像"}
+  - {id: "gh_71356acaea28", name: "XVC和朋友们", note: "XVC和朋友们"}
+  
+
 
 rss:
   # 任何自带 RSS/Atom 的人。id 随便取(做去重用),feed 是真正要抓的地址。
