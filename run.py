@@ -7,7 +7,9 @@ from datetime import datetime, timedelta, timezone
 import dedup
 import models
 import publish
+import rss
 import tikhub
+import xiaoyuzhou
 import xueqiu
 
 CUTOFF_HOURS = 36
@@ -18,6 +20,8 @@ DEFAULT_FETCHERS = {
     "xueqiu": xueqiu.fetch_xueqiu,   # 不走 TikHub,它没有雪球
     "xhs": tikhub.fetch_xhs,
     "wechat": tikhub.fetch_wechat,
+    "rss": rss.fetch_rss,                # Substack / 个人博客,任何自带 feed 的人
+    "podcast": xiaoyuzhou.fetch_xiaoyuzhou,
 }
 
 

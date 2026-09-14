@@ -57,6 +57,22 @@ wechat:
   # ⚠️ 同样是占位数据
   - {id: "gh_363b924965e9", name: "人民日报", note: "占位,待换"}
 
+rss:
+  # 任何自带 RSS/Atom 的人。id 随便取(做去重用),feed 是真正要抓的地址。
+  - {id: "elenaverna", name: "Elena Verna", feed: "https://www.elenaverna.com/feed", note: "增长 / PLG"}
+  - {id: "naval", name: "Naval Ravikant", feed: "https://nav.al/feed", note: "AngelList 创始人的长文"}
+  # 拿不到 feed、别再试的:
+  #   paulgraham.com/rss.html 是 HTML 页不是 feed;社区镜像 aaronsw.com 的条目
+  #   没有日期字段(最新一条停在 2023 年),无法参与 36h 截断
+  #   anthropic.com / claude.com 的博客没有任何 RSS 端点(/rss.xml、/news/rss.xml、
+  #   /engineering/rss.xml 全 404)
+
+podcast:
+  # 小宇宙。id = 播客页 URL xiaoyuzhoufm.com/podcast/<id> 里那串。
+  # 小宇宙没有公开 RSS,适配器直接读页面里的 __NEXT_DATA__。
+  - {id: "626b46ea9cbbf0451cf5a962", name: "张小珺Jùn｜商业访谈录", note: ""}
+  - {id: "648b0b641c48983391a63f98", name: "42章经", note: ""}
+
 # linkedin: 暂缺。2026-09-13 实测 TikHub 的 LinkedIn 全线 400(响应明示不扣费),
 #   证据在 tests/fixtures/linkedin_400_blocked.json。TikHub 修好后加回本节即可,
 #   适配器工作量约等于小红书那个。

@@ -1,0 +1,68 @@
+{
+ "props": {
+  "pageProps": {
+   "podcast": {
+    "title": "张小珺Jùn｜商业访谈录",
+    "episodes": [
+     {
+      "eid": "6a97f287f03e74ee6b03ea5b",
+      "title": "153. 和曾鸣聊产业史观：残酷的真相、会消亡的公司、优秀≠卓越、“OAI、Anth大概率不是原生时代大赢家”",
+      "description": "今天的嘉宾是战略学家曾鸣教授。曾教授曾经是阿里巴巴集团总参谋长，也参与过两所商学院创建（长江商学院和湖畔），但他更令人熟悉的身份是：一名对企业战略有许多深度思考的研究者。不少创业者和企业家都受到过他的启发。\n作为观察过互联网完整周期的研究者，今天我们聊了聊他对AI新时代、新范式的完整思考，并和历史上关键转折时期做了对照——聊完让我有了更全局的视角。\n对AI的产业发展，曾教授提出了许多非共识判断，甚至是一些“暴论”。\n这里我先摘录15条：\nAI产业化会有三个阶段：1）第一个阶段，技术逐渐被社会接受，成为社会基础设施；2）第二个阶段，基于基础设施产生海量新应用，进入百花齐放的时代；3）第三个阶段，当这些海量应用出现，大家发现需要一些更底层的方法运行新的世界，我把它叫作“原生应用阶段”。\n我只是研究商业世界的动力学规律，我能看到的理论框架告诉我：第一阶段的企业，很难活到第二阶段；第二阶段的企业，很难活到第三阶段。\n对比互联网时代，我们现在刚刚走到浏览器阶段，甚至比Yahoo还要早。\n模型公司怎么类比？它有点像另外一个已经消失了的公司——美国在线AOL，它是互联网基础接入服务商，让所有人都能够接到互联网上，这本身是个巨大的工程。今天，大模型则是让所有人都可以轻易接入智能的入口，它也是一个基础设施服务商。\n直白一点说，模型公司就是未来的AI云公司。\n公共基础设施的行业，只有一种商业模式是成立的，叫寡头垄断加政府强监管——我知道这个现实对很多现在创业的人很残酷。\nAnthropic、OpenAI，大概率不是原生应用阶段的大玩家、大赢家。\n因为经济学基本规律，只要有同质化的供给，你就不可能获取高额利润，你就是一家不怎么值钱的公司。\n下个阶段就是看谁是Netscape、谁是Yahoo，谁把Agent的标准建立起来，谁抢住Agent的用户入口。未来三年是有可能开始出现Agent入口的。\n新的平台大概率不诞生自旧的平台。因为旧平台做的是简单信息匹配，新平台要做的是能力跟需求的匹配，复杂度高了很多。\n作为工业化革命的产物，科层制管理的公司制度会衰亡——就是说，“公司”会消亡。这没有什么可以遗憾的呀，将来有更好玩的——你说多少人现在去公司上班是开心的？\n我从来觉得在巨浪面前没有人是安全的。谁觉得安全，谁就是最不安全的。\nCEO不能有老板心态。谁还认你啊？——现在说我都不陪老登玩了，我还陪你老板玩？\n张：这个时代的企业过渡到下一个时代的企业，还能做得非常好的，多不多？曾：不是多不多的问题，是有没有的问题。张：有没有？曾：基本没有。\n这一点都不让人绝望啊，人有生老病死，公司也有生老病死，没有比这更正常的了。这样，新公司才有机会，年轻人才有梦想，这多好的一件事情啊！\n好了，更多内容还是收看我们的播客吧:)\n接下来，就是我对曾教授的访谈。\nOUTLINE:\n00:03:08 来自商业规律的残酷真相\n00:39:53 新平台不来自旧平台\n01:06:15 “公司”要被淘汰\n01:31:10 优秀≠卓越\n01:38:17 战略生成系统\n02:02:48 没有巨头是安全的\n02:18:01 创造就是“无中生有”\nLINKS：\n我们的播客在小宇宙、Apple Podcast、Spotify等全音频平台播出；\n我们的视频播客在小宇宙、Bilibili、小红书、视频号、抖音等全视频平台播出；\n如果你想服用文字版，请搜索我们工作室的公众号：语言即世界language is world。\nDISCLAIMER: 本内容不作为投资建议。\nCONTACT: xiaojunzhang@lisw.ai\nJump into the new world-and explore with us!😉",
+      "pubDate": "2026-09-03T00:00:00.000Z",
+      "clapCount": 542,
+      "commentCount": 187,
+      "duration": 9258,
+      "image": {
+       "picUrl": "https://image.xyzcdn.net/FsGPZo8RfYBhZ7boAgv0PtVf7zBE.png",
+       "width": 3000,
+       "height": 3000,
+       "format": "png",
+       "thumbnailUrl": "https://image.xyzcdn.net/FsGPZo8RfYBhZ7boAgv0PtVf7zBE.png@thumbnail",
+       "smallPicUrl": "https://image.xyzcdn.net/FsGPZo8RfYBhZ7boAgv0PtVf7zBE.png@small",
+       "middlePicUrl": "https://image.xyzcdn.net/FsGPZo8RfYBhZ7boAgv0PtVf7zBE.png@middle",
+       "largePicUrl": "https://image.xyzcdn.net/FsGPZo8RfYBhZ7boAgv0PtVf7zBE.png@large"
+      }
+     },
+     {
+      "eid": "6a8eadd61352af56ff3c6017",
+      "title": "152. 领读Kimi K3技术报告：从架构创新聊起，注意力美学、多教师蒸馏和开源MoE",
+      "description": "今天的节目是一集学习播客，学习Kimi K3技术报告，希望和大家一起领略“技术之美”。\nK3是有效扩展到2.8T总参数并全量开源的MoE模型。大家可能注意到，这集技术报告的领读距离模型发布已经过去一段时间。期间，我们试图寻找一位合适的嘉宾，我们希望这位嘉宾的学术和工作背景非常适合讲K3。最后找到孙宇涛。\n宇涛目前是清华大学计算机系博士候选人，上海创智学院璞锐学者。他从博士开始的研究方向是LLM架构、预训练，架构创新一直是他的兴趣点，这正好是K3亮点之一。\n宇涛透过领读K3技术报告也串联讲解了十多篇相关论文。他的语速非常快——前方语速预警。\nOUTLINE:\n02:00 宇涛的自我介绍和研究经历，为什么对架构创新最感兴趣？\n16:05 从Kimi K3论文出发，论文讲解的框架与脉络\n19:02 宇涛开始领读论文：\n1 导读\nKimi K3将设计概括为沿sequence、depth和width三个维度扩展信息流；其中depth与width本质上仍是模型容量扩展的两种组织⽅式，这⼀“三维 scaling”更多是贯穿论⽂的叙事框架。\n2 Model Architecture\n2.1 线性注意⼒的前世今⽣\n[Microsoft Research] RetNet：最初的 data-independent decay 与 chunk-recurrent 递归形式\n[NVIDIA] Gated DeltaNet：引⼊ gated delta rule\n[Moonshot AI] Kimi Linear：fine-grained decay及其带来的infra变化\n2.2 Gated MLA\n[Alibaba Qwen] Gated Attention for Large Language Models：attention gating与训练稳定性\n2.3 Attention Residuals\n[Microsoft Research] On Layer Normalization in the Transformer Architecture：Pre-LN、Post-LN与训练稳定性\n[ByteDance Seed] Hyper-Connections：残差连接的新维度\n[Moonshot AI] Attention Residuals：以跨深度attention取代固定残差累积，使各层选择性聚合此前表⽰\n2.4 Stable LatentMoE与SiTU-GLU\n[NVIDIA] LatentMoE：通过latent expert space降低MoE通信与权重访问成本\n[OpenAI] GPT-OSS：以clamped SwiGLU控制激活值\n2.5 Muon\n[Moonshot AI] Moonlight / Muon is Scalable for LLM Training：更好的优化表现及随之突出的 activation outlier问题\n2.6 Quantile Balancing\n[科学空间] 《MoE环游记：6、最优分配促均衡》：从最优分配推导Quantile Balancing\n2.7 Native Vision\n3 Pre-Training\n3.1 Scaling Law\n[OpenBMB] MiniCPM：WSD的训练预算扩展、稳定阶段复⽤、继续训练与提前停⽌\n3.2 Long-Context Extension\n[Cohere] RNoPE：交替使⽤RoPE与NoPE，兼顾位置建模与长上下⽂检索\n4 Post-Training\n4.1 Post-Training Pipeline\n4.2 Reinforcement Learning\n[Moonshot AI] Kimi K1.5：提出partial rollout，通过复⽤未完成轨迹降低长CoT rollout开销\n[Moonshot AI] Kimi K2.5：reasoning-effort budget control 与 Agentic Generative Reward Model\n4.3 Multi-Teacher On-Policy Distillation\n[Microsoft Research] MiniLLM：基于student-generated samples的on-policy distillation\n4.4 Deployment-Aware Post-Training\n4.5 Draft Model Fine-Tuning\n5 Infrastructure\n5.1 Pre-Training\n5.1.1 KDA Kernel\n[FLA] Flash Linear Attention：KDA kernel与线性注意⼒⾼效实现\n5.1.2 Distributed Training\n[DeepSeek-AI] DeepSeek-V3 Technical Report：DualPipe与细粒度MoE communication–computation overlap\nMoE overlap的资源trade-off与cross-PP activation transfer\n5.1.3 Perfectly Balanced Expert-Parallel MoE Training\n5.1.4 Memory-Efficient Training\n[Moonshot AI] Mooncake：Mooncake Transfer Engine与cross-PP activation remote offload\n5.1.5 Multimodal Encoder Optimization\n5.2 RL\n5.2.1 Long-Context RL Infrastructure\n5.2.2 Sandbox Infrastructure\n5.3 Inference\n5.3.1 KDA-Aware Prefix Cache Management\n5.3.2 High-Performance Kernels\n5.3.3 Fleet-Level Scheduling\nLINKS：\n我们的播客在小宇宙、Apple Podcast、Spotify等全音频平台播出；\n我们的视频播客在小宇宙、Bilibili、小红书、视频号、抖音等全视频平台播出；\n如果你想服用文字版，请搜索我们工作室的公众号：语言即世界language is world。\nDISCLAIMER: 本内容不作为投资建议。\nCONTACT: xiaojunzhang@lisw.ai\nJump into the new world-and explore with us!😉",
+      "pubDate": "2026-08-26T09:33:46.732Z",
+      "clapCount": 169,
+      "commentCount": 82,
+      "duration": 7459,
+      "image": {
+       "picUrl": "https://image.xyzcdn.net/FhWaLv0I90srM8tw69uhu8gNHfUQ.png",
+       "width": 3000,
+       "height": 3000,
+       "format": "png",
+       "thumbnailUrl": "https://image.xyzcdn.net/FhWaLv0I90srM8tw69uhu8gNHfUQ.png@thumbnail",
+       "smallPicUrl": "https://image.xyzcdn.net/FhWaLv0I90srM8tw69uhu8gNHfUQ.png@small",
+       "middlePicUrl": "https://image.xyzcdn.net/FhWaLv0I90srM8tw69uhu8gNHfUQ.png@middle",
+       "largePicUrl": "https://image.xyzcdn.net/FhWaLv0I90srM8tw69uhu8gNHfUQ.png@large"
+      }
+     },
+     {
+      "eid": "6a8472b95aeb2a5712e8de78",
+      "title": "151. 17岁被2026年ICML收录论文的小少年：我bet开心！开心！开心！",
+      "description": "今天是一集很可爱的播客，嘉宾是出生于2009年，现今17岁的高二学生苏庭灏 （Jonathan）。他高中阶段独立做预训练研究，发表的一篇关于Attention机制的论文刚刚被ICML 2026 Main Track接收。\n我们的节目访谈过许许多多成熟的AI研究者，但这是第一次，我打开了一个高中生的AI世界。他的表达时常有些令我新鲜和奇妙。\n我们聊了聊，过去2年他充满惊喜、趣味，还有哭鼻子的AI旅程，也聊了聊高中生视角下的模型、商业、教育与人类未来。他说，AI让他和同学们有时会感到失去了一些人生的意义感，因为不管你做什么AI都可能比你做得更好，他为此难过了一段时间。\n但后来他调试好了心情。他想好了，他就是想让自己开心，让自己喜欢的人开心，让所有人都开心！——开心是人之根本——既然AI不可控，就不要杞人忧天，要多和喜欢的人聊聊天呀：）\n参加完韩国ICML，中途在城市停顿几天，他就要去农村支教了。那是全然的另一个世界。他提醒自己，要离开AI，沉浸到另一个抓昆虫、玩狼人杀、慢吞吞的人类世界。\n接下来，就是我和苏庭灏的聊天。\nOUTLINE:\n00:03:04 我想做一个全世界最好的大语言模型！\n00:08:12 喜欢自由探索，喜欢下象棋，象棋如游戏\n00:11:15 我如何独自做预训练，预训练有点magical\n00:13:07 我白白丢了1500，我特别特别伤心，我都哭了\n00:13:55 被2026年ICML收录的论文《Attention Projection Mixing with Exogenous Anchors》\n00:17:48 高中自学AI之路和那些灵光乍现的时刻\n00:21:44 我一生中前20最开心的时刻 ，遇到每个人我都会问：AI会灭绝人类吗？\n00:28:22 我眼中的模型公司、应用公司、机器人公司、AGI与商业世界\n00:31:46 作为AI原住民的05后，我会教我父母用AI，我观察AI让好学生成绩更好了\n00:36:47 一位高中生视角下，AI降临后的教育突变：人失去了意义感\n00:40:05 我希望AI发展别那么快，给人类一个缓冲的时间\n00:41:32 我同学说，我现在从读书到当医生还要10年，但没人知道10年后是不是AI做的比人好\n00:47:09 AI降临前后的两个世界和两种生活\n00:51:44 我从韩国ICML回来马上穿梭进另一个世界：在农村支教\n00:57:21 开心是人之根本，开心的总量是有限的\n00:59:12 狂想未来，我希望所有人都开心！！！\nPHOTOS:\n(第一次参加ICML的Jonathon)\n（象棋比赛中的Jonathon）\n（在支教的Jonathon）\nLINKS：\n我们的播客在小宇宙、Apple Podcast、Spotify等全音频平台播出；\n我们的视频播客在小宇宙、Bilibili、小红书、视频号、抖音等全视频平台播出；\n如果你想服用文字版，请搜索我们工作室的公众号：语言即世界language is world。\nDISCLAIMER: 本内容不作为投资建议。\nCONTACT: xiaojunzhang@lisw.ai\nJump into the new world-and explore with us!😉",
+      "pubDate": "2026-08-19T00:00:00.000Z",
+      "clapCount": 94,
+      "commentCount": 99,
+      "duration": 4190,
+      "image": {
+       "picUrl": "https://image.xyzcdn.net/FjIctZnUfsTAtU9ZVcYplZgnV7_h.png",
+       "width": 3000,
+       "height": 3000,
+       "format": "png",
+       "thumbnailUrl": "https://image.xyzcdn.net/FjIctZnUfsTAtU9ZVcYplZgnV7_h.png@thumbnail",
+       "smallPicUrl": "https://image.xyzcdn.net/FjIctZnUfsTAtU9ZVcYplZgnV7_h.png@small",
+       "middlePicUrl": "https://image.xyzcdn.net/FjIctZnUfsTAtU9ZVcYplZgnV7_h.png@middle",
+       "largePicUrl": "https://image.xyzcdn.net/FjIctZnUfsTAtU9ZVcYplZgnV7_h.png@large"
+      }
+     }
+    ]
+   }
+  }
+ }
+}

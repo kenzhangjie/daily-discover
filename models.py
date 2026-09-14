@@ -7,7 +7,7 @@ import sys
 
 TWITTER_FMT = "%a %b %d %H:%M:%S %z %Y"
 
-CHANNELS = ("twitter", "xueqiu", "xhs", "wechat")
+CHANNELS = ("twitter", "xueqiu", "xhs", "wechat", "rss", "podcast")
 
 
 def _yaml():
