@@ -11,6 +11,11 @@ on:
     paths:
       - "*.py"
       - "sources.yaml"
+  # 榜单块的 GitHub 两组也在这个脚本里算。云沙盒够不着 github.com,
+  # 只有 Actions runner 能拿到,所以要定时刷 —— 否则 release 出了新版本,
+  # 页面上还停在上次 push 那天的版本号。01:00 UTC 那次 routine 之前刷一遍。
+  schedule:
+    - cron: "40 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -32,3 +37,6 @@ jobs:
             echo "code/$f -> HTTP $code"
             [ "$code" = "200" ] || exit 1
           done
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$R2/radar/github.json")
+          echo "radar/github.json -> HTTP $code"
+          [ "$code" = "200" ] || exit 1

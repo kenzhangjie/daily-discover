@@ -10,8 +10,11 @@
 用法:本地 `python3 sync_to_r2.py`(读环境变量里的 R2 凭证),
 或让 .github/workflows/sync-r2.yml 在每次 push 后自动跑。
 """
+import json
 import os
 import sys
+import urllib.parse
+import urllib.request
 
 import publish
 
@@ -20,6 +23,60 @@ FILES = ["models.py", "tikhub.py", "xueqiu.py", "rss.py", "xiaoyuzhou.py",
          "run.py", "sources.yaml"]
 
 CONTENT_TYPE = {".py": "text/x-python", ".yaml": "text/yaml"}
+
+
+GH_API = "https://api.github.com"
+GH_WATCH_REPOS = ("anthropics/claude-code", "openai/openai-python")
+GH_TRENDING_TOP_N = 8
+
+
+def _gh(url):
+    """Actions runner 上有完整的 GitHub 访问权,还自带 GITHUB_TOKEN 免限流。"""
+    headers = {"User-Agent": "daily-discover-sync", "Accept": "application/vnd.github+json"}
+    tok = os.environ.get("GITHUB_TOKEN")
+    if tok:
+        headers["Authorization"] = f"Bearer {tok}"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8", "replace"))
+
+
+def build_github_radar():
+    """把榜单块的 GitHub 两组在这里算好,写成 JSON 摆到 R2。
+
+    为什么要这座桥:云沙盒的代理**把 github.com 和 api.github.com 全拦了**
+    (2026-09-14 线上连续两次实测,403;只有 raw.githubusercontent.com 放行),
+    所以 radar.py 在沙盒里怎么写都拿不到。而 Actions runner 跑在 GitHub 自己
+    的机器上,访问毫无问题 —— 让它算好、摆到 R2,沙盒去读 R2。
+    和代码同步用的是同一条通路。
+    """
+    out = {"trending": [], "releases": []}
+    try:
+        q = "created:>2026-01-01 stars:>500 language:python"
+        data = _gh(f"{GH_API}/search/repositories?q={urllib.parse.quote(q)}"
+                   f"&sort=stars&order=desc&per_page={GH_TRENDING_TOP_N}")
+        for it in data.get("items") or []:
+            out["trending"].append({
+                "title": it.get("full_name") or "",
+                "url": it.get("html_url") or "",
+                "score": int(it.get("stargazers_count") or 0),
+                "note": (it.get("description") or "")[:120],
+            })
+    except Exception as e:  # noqa: BLE001
+        print(f"WARN trending 取不到: {e}", file=sys.stderr)
+    for repo in GH_WATCH_REPOS:
+        try:
+            r = _gh(f"{GH_API}/repos/{repo}/releases/latest")
+            if r.get("tag_name"):
+                out["releases"].append({
+                    "title": f"{repo} {r['tag_name']}",
+                    "url": r.get("html_url") or f"https://github.com/{repo}/releases",
+                    "published": (r.get("published_at") or "")[:10],
+                    "note": "",
+                })
+        except Exception as e:  # noqa: BLE001
+            print(f"WARN release {repo} 取不到: {e}", file=sys.stderr)
+    return out
 
 
 def main():
@@ -36,6 +93,12 @@ def main():
                              content_type=CONTENT_TYPE.get(ext, "text/plain"))
         print(f"OK code/{name}  {len(body)}B")
     print(f"已同步 {len(FILES)} 个文件到 R2 的 code/ 前缀")
+
+    radar = build_github_radar()
+    publish._default_put("radar/github.json",
+                         json.dumps(radar, ensure_ascii=False).encode("utf-8"))
+    print(f"已写 radar/github.json  trending {len(radar['trending'])} "
+          f"| releases {len(radar['releases'])}")
     return 0
 
 

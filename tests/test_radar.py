@@ -59,90 +59,58 @@ class TestHN(unittest.TestCase):
         self.assertEqual(radar.fetch_hn(get=scripted({"hn.algolia": {"hits": []}})), [])
 
 
-TRENDING_HTML = """
-<article class="Box-row">
-  <h2 class="h3 lh-condensed">
-    <a data-hydro-click="{&quot;x&quot;:1}" href="/owner/slow">owner/slow</a>
-  </h2>
-  <p class="col-9 color-fg-muted">一个 &amp; 符号</p>
-  <a href="/owner/slow/stargazers" class="x"><svg>s</svg> 1,200</a>
-  <span>50 stars today</span>
-</article>
-<article class="Box-row">
-  <h2 class="h3 lh-condensed">
-    <a data-hydro-click="{}" href="/owner/hot">owner/hot</a>
-  </h2>
-  <a href="/owner/hot/stargazers" class="x"><svg>s</svg> 900</a>
-  <span>2,600 stars today</span>
-</article>
-"""
-
-RELEASES_ATOM = """<feed><entry>
-  <title>v1.2.3</title>
-  <updated>2026-09-13T10:00:00Z</updated>
-  <link rel="alternate" href="https://github.com/x/y/releases/tag/v1.2.3"/>
-</entry><entry>
-  <title>v1.2.2</title><updated>2026-09-01T10:00:00Z</updated>
-</entry></feed>"""
+GH_RADAR = {
+    "trending": [
+        {"title": "owner/small", "url": "https://github.com/owner/small",
+         "score": 900, "note": "小的"},
+        {"title": "owner/big", "url": "https://github.com/owner/big",
+         "score": 5000, "note": "大的"},
+    ],
+    "releases": [
+        {"title": "x/y v1.2.3", "url": "https://github.com/x/y/releases/tag/v1.2.3",
+         "published": "2026-09-13", "note": ""},
+    ],
+}
 
 
-class TestGithubTrending(unittest.TestCase):
-    def test_href_is_not_the_first_attribute_on_the_anchor(self):
-        """<a> 上 data-hydro-click 排在 href 前面,直接接 `<a href=` 匹配不到 ——
-        线上就是这么解析出 0 行的。"""
-        rows = radar.parse_trending(TRENDING_HTML)
-        self.assertEqual({r["title"] for r in rows}, {"owner/slow", "owner/hot"})
+class TestGithubViaR2Bridge(unittest.TestCase):
+    """沙盒里 github.com 和 api.github.com 全被代理拦掉(2026-09-14 两次实测 403),
+    只放行 raw.githubusercontent.com。所以这两组由 GitHub Actions 预先算好摆到 R2,
+    这里只读那个 JSON。"""
 
-    def test_sorted_by_stars_gained_today_not_total(self):
-        rows = radar.fetch_github_trending(get=scripted({"github.com/trending": TRENDING_HTML}))
-        self.assertEqual([r["title"] for r in rows], ["owner/hot", "owner/slow"])
-
-    def test_star_count_survives_the_svg_between_link_and_number(self):
-        rows = radar.parse_trending(TRENDING_HTML)
-        slow = next(r for r in rows if r["title"] == "owner/slow")
-        self.assertEqual(slow["score"], 1200)
-        self.assertEqual(slow["today"], 50)
-
-    def test_description_entities_are_unescaped(self):
-        slow = next(r for r in radar.parse_trending(TRENDING_HTML) if r["title"] == "owner/slow")
-        self.assertEqual(slow["note"], "一个 & 符号")
-
-    def test_parsing_nothing_raises_instead_of_returning_empty(self):
-        """GitHub 会改版这个页面。静默返回空会被读成「今天没有 trending」,
-        一个坏掉的源就这么消失几个月。"""
-        with self.assertRaises(ValueError):
-            radar.parse_trending("<html>改版了</html>")
-
-    def test_does_not_touch_api_github_com(self):
-        """api.github.com 在云沙盒里被代理整个拦掉,带不带 token 都 403。"""
-        get = scripted({"github.com/trending": TRENDING_HTML})
+    def test_reads_the_bridge_json_not_github(self):
+        get = scripted({"radar/github.json": GH_RADAR})
         radar.fetch_github_trending(get=get)
+        radar.fetch_github_releases(get=get)
         self.assertTrue(get.seen)
         for url in get.seen:
-            self.assertNotIn("api.github.com", url)
+            self.assertNotIn("github.com/", url.replace("raw.githubusercontent.com/", ""))
+            self.assertIn("radar/github.json", url)
 
+    def test_trending_sorted_by_stars(self):
+        rows = radar.fetch_github_trending(get=scripted({"radar/github.json": GH_RADAR}))
+        self.assertEqual([r["title"] for r in rows], ["owner/big", "owner/small"])
 
-class TestGithubReleases(unittest.TestCase):
-    def test_takes_only_the_newest_entry(self):
-        rows = radar.parse_releases_atom(RELEASES_ATOM, "x/y")
-        self.assertEqual(len(rows), 1)
+    def test_releases_passed_through(self):
+        rows = radar.fetch_github_releases(get=scripted({"radar/github.json": GH_RADAR}))
         self.assertEqual(rows[0]["title"], "x/y v1.2.3")
-        self.assertEqual(rows[0]["published"], "2026-09-13")
-        self.assertEqual(rows[0]["url"], "https://github.com/x/y/releases/tag/v1.2.3")
 
-    def test_empty_feed_is_not_an_error(self):
-        self.assertEqual(radar.parse_releases_atom("<feed></feed>", "x/y"), [])
+    def test_bridge_missing_keys_is_not_an_error(self):
+        """Actions 那边某一组取不到时会写成空数组,这里不能因此炸掉。"""
+        get = scripted({"radar/github.json": {}})
+        self.assertEqual(radar.fetch_github_trending(get=get), [])
+        self.assertEqual(radar.fetch_github_releases(get=get), [])
 
-    def test_one_repo_failing_does_not_kill_the_other(self):
-        get = scripted({"releases.atom": RELEASES_ATOM}, errors=("anthropics",))
-        rows = radar.fetch_github_releases(
-            get=get, repos=("anthropics/claude-code", "openai/openai-python"))
-        self.assertEqual(len(rows), 1)
+    def test_bridge_unreachable_degrades_in_build_radar(self):
+        def get(url):
+            if "radar/github.json" in url:
+                raise RuntimeError("R2 挂了")
+            return ALL_SOURCES(url)
 
-    def test_uses_the_atom_feed_not_the_api(self):
-        get = scripted({"releases.atom": RELEASES_ATOM})
-        radar.fetch_github_releases(get=get, repos=("x/y",))
-        self.assertEqual(get.seen, ["https://github.com/x/y/releases.atom"])
+        r = radar.build_radar(get=get)
+        self.assertEqual(r["github_trending"], [])
+        self.assertEqual(r["github_releases"], [])
+        self.assertTrue(r["hn"])
 
 
 PG_INDEX = '<html><a href="powerful.html">Making Startups Powerful</a></html>'
@@ -152,10 +120,8 @@ def ALL_SOURCES(url):
     """一个取数器喂四种载荷。"""
     if "hn.algolia" in url:
         return json.dumps(HN_PAYLOAD)
-    if "github.com/trending" in url:
-        return TRENDING_HTML
-    if "releases.atom" in url:
-        return RELEASES_ATOM
+    if "radar/github.json" in url:
+        return json.dumps(GH_RADAR)
     if "articles.html" in url:
         return PG_INDEX
     return "September 2026"
