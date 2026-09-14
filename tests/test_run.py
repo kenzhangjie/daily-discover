@@ -9,6 +9,9 @@ def P(pid, ts, channel="twitter"):
                        text=pid, ts=ts, url="u", engagement={}, media=[], repost_of=None)
 
 
+
+EMPTY_RADAR = {"hn": [], "github_trending": [], "github_releases": []}
+
 class TestCollect(unittest.TestCase):
     def test_drops_older_than_cutoff(self):
         fetchers = {"twitter": lambda c, p: [P("new", "2026-09-13T00:00:00Z"),
@@ -63,6 +66,7 @@ class TestBalanceFailureDegrades(unittest.TestCase):
         with mock.patch("run.tikhub.TikHub", return_value=FakeClient()), \
              mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
              mock.patch.object(run, "load_market", return_value={"polymarket": [], "ipo": []}), \
+             mock.patch.object(run.radar_mod, "build_radar", return_value=EMPTY_RADAR), \
              mock.patch("publish.fetch_index", return_value={"days": [], "authors": []}), \
              mock.patch("publish.upload_r2", side_effect=fake_upload):
             rc = run.main([])
@@ -116,6 +120,7 @@ class TestStatsCountMatchesIndexTotal(unittest.TestCase):
         with mock.patch("run.tikhub.TikHub", return_value=FakeClient()), \
              mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
              mock.patch.object(run, "load_market", return_value={"polymarket": [], "ipo": []}), \
+             mock.patch.object(run.radar_mod, "build_radar", return_value=EMPTY_RADAR), \
              mock.patch("publish.fetch_index", return_value={"days": [], "authors": []}), \
              mock.patch("publish.upload_r2", side_effect=fake_upload):
             rc = run.main([])
@@ -139,6 +144,18 @@ class TestLoadMarket(unittest.TestCase):
         missing_here = "/tmp/does-not-exist-daily-discover-test"
         market = run.load_market(missing_here)
         self.assertEqual(market, {"polymarket": [], "ipo": []})
+
+
+class TestNoRealNetwork(unittest.TestCase):
+    def test_main_never_reaches_the_network_for_radar(self):
+        """run.main() 会调 radar_mod.build_radar(),它内部逐源容错所以不会报错,
+        只会静默打三次真实 HTTP —— 测试跑 8 秒就是这么来的。任何新接的
+        补充品数据源都要在这里补一条 mock。"""
+        import radar
+        with mock.patch.object(radar.urllib.request, "urlopen",
+                               side_effect=AssertionError("测试里不许打真网络")):
+            self.assertEqual(radar.build_radar(),
+                             {"hn": [], "github_trending": [], "github_releases": []})
 
 
 if __name__ == "__main__":

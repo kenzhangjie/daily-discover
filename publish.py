@@ -13,7 +13,9 @@ def _now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def build_shard(date, posts, stats, market):
+def build_shard(date, posts, stats, market, radar=None):
+    """radar 默认给空壳而不是省略这个键 —— 页面按键存在与否决定要不要渲染那一块,
+    键时有时无会让旧分片和新分片走两条不同的渲染路径。"""
     ordered = sorted(posts, key=lambda p: p.ts, reverse=True)
     return {
         "date": date,
@@ -21,6 +23,7 @@ def build_shard(date, posts, stats, market):
         "stats": stats,
         "posts": [p.to_dict() for p in ordered],
         "market": market,
+        "radar": radar or {"hn": [], "github_trending": [], "github_releases": []},
     }
 
 

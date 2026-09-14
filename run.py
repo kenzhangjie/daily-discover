@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import dedup
 import models
 import publish
+import radar as radar_mod
 import rss
 import tikhub
 import xiaoyuzhou
@@ -101,7 +102,8 @@ def main(argv=None):
 
     beijing = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
     market = load_market(here)
-    shard = publish.build_shard(beijing, posts, stats, market)
+    radar = radar_mod.build_radar()      # 内部逐源容错,全挂返回空壳
+    shard = publish.build_shard(beijing, posts, stats, market, radar)
 
     # 分片
     shard_key = f"discover/{beijing}.json"
