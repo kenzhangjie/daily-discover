@@ -1,0 +1,62 @@
+# daily discover · 关注名单
+#
+# 改这个文件 → 推 GitHub → 下次每日运行(北京 09:12)自动生效,不用动 routine。
+#
+# 每个渠道一个列表,每项三个字段:
+#   id    渠道内的唯一标识(见各渠道下方注释),**必填**
+#   name  显示名,留空则页面上显示 id
+#   note  给你自己看的备注,页面侧栏不显示
+#
+# ⚠️ name 和 note 一律加双引号。旧的 daily-insight/sources.yaml 里
+#    `note: Founder - Altimeter, Invest America` 没加引号,YAML 遇到逗号就截断,
+#    后半截被静默吃掉,一直到迁移时才发现。
+
+twitter:
+  # id = handle,不带 @。主页 URL x.com/<handle> 里的那段
+  - {id: "paulg", name: "Paul Graham", note: "YC 联合创始人"}
+  - {id: "elonmusk", name: "Elon Musk", note: "X/Tesla/xAI(高噪音)"}
+  - {id: "_catwu", name: "Cat Wu", note: "Anthropic Claude Code PM"}
+  - {id: "steipete", name: "Peter Steinberger", note: "indie dev / PSPDFKit"}
+  - {id: "claudeai", name: "Claude", note: "Anthropic 官号"}
+  - {id: "trq212", name: "Thariq", note: "Anthropic Claude Code 工程师"}
+  - {id: "bcherny", name: "Boris Cherny", note: "Anthropic Claude Code Lead"}
+  - {id: "karpathy", name: "Andrej Karpathy", note: "前 OpenAI/Tesla · AI 教育"}
+  - {id: "indigox", name: "IndigoX", note: ""}
+  - {id: "lennysan", name: "Lenny Rachitsky", note: "Lenny's Newsletter"}
+  - {id: "ElenaVerna", name: "Elena Verna", note: "增长顾问"}
+  - {id: "naval", name: "Naval Ravikant", note: "AngelList 创始人"}
+  - {id: "OpenAI", name: "OpenAI", note: "OpenAI 官号"}
+  - {id: "HarryStebbings", name: "Harry Stebbings", note: "20VC 主持人"}
+  - {id: "fadeone_x", name: "", note: "achiv.com 创始人 · 流量分类研究(临时)"}
+  - {id: "aleabitoreddit", name: "Serenity", note: "股神白毛女"}
+  - {id: "dylan522p", name: "Dylan Patel", note: "SemiAnalysis"}
+  - {id: "GavinSBaker", name: "Gavin Baker", note: "Managing Partner & CIO"}
+  - {id: "AvitalBalwit", name: "Avital Balwit", note: "Chief of Staff @anthropicai"}
+  - {id: "ericschmidt", name: "Eric Schmidt", note: "Former Executive Chairman & CEO"}
+  - {id: "DarioAmodei", name: "Dario Amodei", note: "Anthropic CEO"}
+  - {id: "noahzweben", name: "Noah Zweben", note: "Claude Code PM @anthropicai"}
+  - {id: "mikeyk", name: "Mike Krieger", note: "Instagram cofounder"}
+  - {id: "altcap", name: "Brad Gerstner", note: "Founder - Altimeter, Invest America"}
+  - {id: "apoorv03", name: "Apoorv Agrawal", note: "Investing at Altimeter"}
+  - {id: "jaminball", name: "Jamin Ball", note: "Altimeter Partner working with software"}
+  - {id: "paulinebhyang", name: "Pauline Yang", note: "Partner @ Altimeter Capital."}
+  - {id: "FredaDuan", name: "Freda Duan", note: "Investing @ Altimeter Capital"}
+
+xueqiu:
+  # id = 雪球用户数字 id。主页 URL xueqiu.com/u/<id> 里的那串数字
+  # (不是 @后面的昵称。点进对方主页看地址栏。)
+  - {id: "8152922548", name: "今日话题", note: "雪球官方话题号,占位用,可删"}
+
+xhs:
+  # id = 小红书用户 id(24 位十六进制)。主页 URL xiaohongshu.com/user/profile/<id>
+  # ⚠️ 下面这条是占位的测试数据,不是你指定的 —— 换成真人或整段删掉
+  - {id: "61b46d790000000010008153", name: "JeremyLin林书豪", note: "占位,待换"}
+
+wechat:
+  # id = 公众号的 gh_ 开头原始 id,或账号名
+  # ⚠️ 同样是占位数据
+  - {id: "gh_363b924965e9", name: "人民日报", note: "占位,待换"}
+
+# linkedin: 暂缺。2026-09-13 实测 TikHub 的 LinkedIn 全线 400(响应明示不扣费),
+#   证据在 tests/fixtures/linkedin_400_blocked.json。TikHub 修好后加回本节即可,
+#   适配器工作量约等于小红书那个。

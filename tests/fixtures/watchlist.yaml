@@ -1,0 +1,4 @@
+# 测试用假 watchlist —— 内容不重要,FakeFM.parse_watchlist 不解析它,
+# 只是 build_market 需要一个真实存在的文件才能 open()。
+us_watchlist:
+  - AAPL

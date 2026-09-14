@@ -1,0 +1,367 @@
+{
+ "code": 200,
+ "request_id": "24c2d00c-af3c-41fd-b2ff-3da2fae1fa6e",
+ "message": "Request successful. This request will incur a charge.",
+ "message_zh": "请求成功，本次请求将被计费。",
+ "support": "Discord: https://discord.gg/aMEAS8Xsvz",
+ "time": "2026-09-12 21:44:22",
+ "time_stamp": 1789274662,
+ "time_zone": "America/Los_Angeles",
+ "docs": "https://api.tikhub.io/#/Twitter-Web-API/fetch_user_post_tweet_api_v1_twitter_web_fetch_user_post_tweet_get",
+ "cache_message": "This response is cached and accessible via the URL below for 24 hours at no extra cost. The cache is for request tracing only — it doesn't affect the API's data freshness and won't be returned through the API again.",
+ "cache_message_zh": "本次响应已缓存，可通过下方 URL 直接查看，有效期 24 小时，访问缓存链接无额外费用。缓存仅用于请求溯源，不影响接口数据的时效性，也不会再次通过接口返回。",
+ "cache_url": "https://cache.tikhub.io/api/v1/cache/public/24c2d00c-af3c-41fd-b2ff-3da2fae1fa6e?sign=c1f6c97575dc62e6b69e5629dfc3336e95742bf5ce820fb78d59bcc3f7698527",
+ "router": "/api/v1/twitter/web/fetch_user_post_tweet",
+ "params": {
+  "screen_name": "paulg",
+  "count": "20"
+ },
+ "data": {
+  "timeline": [
+   {
+    "tweet_id": "2098867257182978403",
+    "bookmarks": 0,
+    "created_at": "Sat Sep 12 20:12:03 +0000 2026",
+    "favorites": 0,
+    "text": "RT @ArmandDoma: The Revolution Will Be Vibecoded",
+    "lang": "en",
+    "sensitive": null,
+    "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+    "views": "4727",
+    "quotes": 0,
+    "entities": {
+     "user_mentions": [
+      {
+       "id_str": "25913049",
+       "name": "Armand Domalewski",
+       "screen_name": "ArmandDoma"
+      }
+     ]
+    },
+    "replies": 0,
+    "retweets": 12,
+    "conversation_id": "2098867257182978403",
+    "media": [],
+    "author": {
+     "rest_id": "183749519",
+     "name": "Paul Graham",
+     "screen_name": "paulg",
+     "avatar": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+     "followers_count": 5213970,
+     "blue_verified": true
+    },
+    "retweeted": {
+     "id": "2098863116474110283"
+    },
+    "retweeted_tweet": {
+     "tweet_id": "2098863116474110283",
+     "bookmarks": 8,
+     "created_at": "Sat Sep 12 19:55:36 +0000 2026",
+     "favorites": 104,
+     "text": "The Revolution Will Be Vibecoded",
+     "lang": "en",
+     "sensitive": null,
+     "views": "21289",
+     "quotes": 1,
+     "entities": [],
+     "replies": 11,
+     "retweets": 12,
+     "conversation_id": "2098863116474110283",
+     "author": {
+      "rest_id": "25913049",
+      "name": "Armand Domalewski",
+      "screen_name": "ArmandDoma",
+      "avatar": "https://pbs.twimg.com/profile_images/2062572071151083525/BZ5aSxyP_normal.jpg",
+      "blue_verified": true
+     },
+     "media": []
+    }
+   },
+   {
+    "tweet_id": "2098728359442210980",
+    "bookmarks": 456,
+    "created_at": "Sat Sep 12 11:00:08 +0000 2026",
+    "favorites": 1240,
+    "text": "Four ways to be: https://t.co/CBijzOnGMV",
+    "lang": "en",
+    "sensitive": false,
+    "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+    "views": "143114",
+    "quotes": 9,
+    "entities": [],
+    "replies": 68,
+    "retweets": 74,
+    "conversation_id": "2098728359442210980",
+    "media": {
+     "photo": [
+      {
+       "media_url_https": "https://pbs.twimg.com/media/HSAuQmfbYAE-DNL.png",
+       "id": "2098728289099800577",
+       "sizes": {
+        "h": 220,
+        "w": 542
+       }
+      }
+     ]
+    },
+    "author": {
+     "rest_id": "183749519",
+     "name": "Paul Graham",
+     "screen_name": "paulg",
+     "avatar": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+     "followers_count": 5213970,
+     "blue_verified": true
+    }
+   },
+   {
+    "tweet_id": "2098157730397605896",
+    "bookmarks": 0,
+    "created_at": "Thu Sep 10 21:12:39 +0000 2026",
+    "favorites": 0,
+    "text": "RT @tbpn: YC's @garrytan says hard tech startups make up a quarter of the newest 200-company Demo Day batch, up 40x since their low point ~…",
+    "lang": "en",
+    "sensitive": null,
+    "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+    "views": "5425",
+    "quotes": 0,
+    "entities": {
+     "user_mentions": [
+      {
+       "id_str": "1838288550569349120",
+       "name": "TBPN",
+       "screen_name": "tbpn"
+      },
+      {
+       "id_str": "11768582",
+       "name": "Garry Tan",
+       "screen_name": "garrytan"
+      }
+     ]
+    },
+    "replies": 0,
+    "retweets": 17,
+    "conversation_id": "2098157730397605896",
+    "media": [],
+    "author": {
+     "rest_id": "183749519",
+     "name": "Paul Graham",
+     "screen_name": "paulg",
+     "avatar": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+     "followers_count": 5213970,
+     "blue_verified": true
+    },
+    "retweeted": {
+     "id": "2098135496920818062"
+    },
+    "retweeted_tweet": {
+     "tweet_id": "2098135496920818062",
+     "bookmarks": 27,
+     "created_at": "Thu Sep 10 19:44:18 +0000 2026",
+     "favorites": 164,
+     "text": "YC's @garrytan says hard tech startups make up a quarter of the newest 200-company Demo Day batch, up 40x since their low point ~4 years ago:\n\n\"It's 200 companies presenting today. About a quarter of them are hard tech. That's up 40x since our low bar, maybe 3-5 years ago.\" https://t.co/hXwZ0oVVY6",
+     "lang": "en",
+     "sensitive": false,
+     "views": "44507",
+     "quotes": 2,
+     "entities": {
+      "media": [
+       {
+        "additional_media_info": {
+         "monetizable": false
+        },
+        "display_url": "pic.x.com/hXwZ0oVVY6",
+        "expanded_url": "https://x.com/tbpn/status/2098135496920818062/video/1",
+        "ext_media_availability": {
+         "status": "Available"
+        },
+        "id_str": "2098135421922463744",
+        "indices": [
+         275,
+         298
+        ],
+        "media_key": "13_2098135421922463744",
+        "media_results": {
+         "result": {
+          "media_key": "13_2098135421922463744"
+         }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2098135421922463744/img/AcdhGqWcEZdBREc6.jpg",
+        "original_info": {
+         "focus_rects": [],
+         "height": 1080,
+         "width": 1920
+        },
+        "sizes": {
+         "large": {
+          "h": 1080,
+          "resize": "fit",
+          "w": 1920
+         },
+         "medium": {
+          "h": 675,
+          "resize": "fit",
+          "w": 1200
+         },
+         "small": {
+          "h": 383,
+          "resize": "fit",
+          "w": 680
+         },
+         "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+         }
+        },
+        "type": "video",
+        "url": "https://t.co/hXwZ0oVVY6",
+        "video_info": {
+         "aspect_ratio": [
+          16,
+          9
+         ],
+         "duration_millis": 68400,
+         "variants": [
+          {
+           "content_type": "application/x-mpegURL",
+           "url": "https://video.twimg.com/amplify_video/2098135421922463744/pl/Qf5OrXjW4dzmEhWX.m3u8?tag=16&v=b47"
+          },
+          {
+           "bitrate": 288000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/480x270/W0A4c6T_BCtoRi0h.mp4?tag=16"
+          },
+          {
+           "bitrate": 832000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/640x360/nNg9BE5R0Jozj0an.mp4?tag=16"
+          },
+          {
+           "bitrate": 2176000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/1280x720/8jz7yBPzG2mYR9_Y.mp4?tag=16"
+          },
+          {
+           "bitrate": 10368000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/1920x1080/1PcRR1Dps4ggaA2w.mp4?tag=16"
+          }
+         ]
+        }
+       }
+      ],
+      "user_mentions": [
+       {
+        "id_str": "11768582",
+        "indices": [
+         5,
+         14
+        ],
+        "name": "Garry Tan",
+        "screen_name": "garrytan"
+       }
+      ]
+     },
+     "replies": 11,
+     "retweets": 17,
+     "conversation_id": "2098135496920818062",
+     "author": {
+      "rest_id": "1838288550569349120",
+      "name": "TBPN",
+      "screen_name": "tbpn",
+      "avatar": "https://pbs.twimg.com/profile_images/2007964599774220288/jQbJ0IDt_normal.jpg",
+      "blue_verified": true
+     },
+     "media": {
+      "video": [
+       {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2098135421922463744/img/AcdhGqWcEZdBREc6.jpg",
+        "variants": [
+         {
+          "content_type": "application/x-mpegURL",
+          "url": "https://video.twimg.com/amplify_video/2098135421922463744/pl/Qf5OrXjW4dzmEhWX.m3u8?tag=16&v=b47"
+         },
+         {
+          "bitrate": 288000,
+          "content_type": "video/mp4",
+          "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/480x270/W0A4c6T_BCtoRi0h.mp4?tag=16"
+         },
+         {
+          "bitrate": 832000,
+          "content_type": "video/mp4",
+          "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/640x360/nNg9BE5R0Jozj0an.mp4?tag=16"
+         },
+         {
+          "bitrate": 2176000,
+          "content_type": "video/mp4",
+          "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/1280x720/8jz7yBPzG2mYR9_Y.mp4?tag=16"
+         },
+         {
+          "bitrate": 10368000,
+          "content_type": "video/mp4",
+          "url": "https://video.twimg.com/amplify_video/2098135421922463744/vid/avc1/1920x1080/1PcRR1Dps4ggaA2w.mp4?tag=16"
+         }
+        ],
+        "aspect_ratio": [
+         16,
+         9
+        ],
+        "duration": 68400,
+        "original_info": {
+         "focus_rects": [],
+         "height": 1080,
+         "width": 1920
+        },
+        "id": "2098135421922463744"
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "next_cursor": "DAAHCgABHSEh6GV__-wLAAIAAAATMjA5NzM5NzI0NzE0Mjk3MzkxNQgAAwAAAAIAAA",
+  "prev_cursor": "DAAHCgABHSEh6GWAJxELAAIAAAATMjA5ODg2NzI1NzE4Mjk3ODQwMwgAAwAAAAEAAA",
+  "status": "ok",
+  "user": {
+   "status": "active",
+   "profile": "paulg",
+   "rest_id": "183749519",
+   "blue_verified": true,
+   "verification_type": {
+    "is_identity_verified": false,
+    "reason": {
+     "description": {
+      "entities": [
+       {
+        "from_index": 25,
+        "ref": {
+         "url": "https://help.twitter.com/managing-your-account/about-twitter-verified-accounts",
+         "url_type": "ExternalUrl"
+        },
+        "to_index": 35
+       }
+      ],
+      "text": "This account is Premium. Learn more"
+     },
+     "verified_since_msec": "1282951815791"
+    }
+   },
+   "affiliates": [],
+   "business_account": [],
+   "avatar": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+   "header_image": "https://pbs.twimg.com/profile_banners/183749519/1401332683",
+   "desc": "",
+   "name": "Paul Graham",
+   "website": "paulgraham.com",
+   "protected": false,
+   "location": "",
+   "friends": 799,
+   "sub_count": 5213970,
+   "statuses_count": 54674,
+   "media_count": 1981,
+   "created_at": "Fri Aug 27 20:13:59 +0000 2010",
+   "pinned_tweet_ids_str": null,
+   "id": "183749519"
+  }
+ }
+}

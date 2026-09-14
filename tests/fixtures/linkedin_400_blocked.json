@@ -1,0 +1,18 @@
+{
+ "detail": {
+  "code": 400,
+  "request_id": "4439d6fd-34f6-4f70-be28-12eb9a46daac",
+  "message": "Request failed. Please retry. Check the docs below to verify your parameters, test with the default demo parameters, and send the response JSON to support. You won't be charged for this request.",
+  "message_zh": "请求失败，请重试。请查看下方文档核对参数，使用默认演示参数测试，并将响应 JSON 提交给支持团队。本次请求不会被扣费。",
+  "docs": "https://api.tikhub.io/#/LinkedIn-Web-V2-API/get_user_posts_api_v1_linkedin_web_v2_get_user_posts_get",
+  "support": "Discord: https://discord.gg/aMEAS8Xsvz",
+  "time": "2026-09-13 08:27:26",
+  "time_stamp": 1789313246,
+  "time_zone": "America/Los_Angeles",
+  "router": "/api/v1/linkedin/web_v2/get_user_posts",
+  "params": {
+   "url": "williamhgates"
+  },
+  "headers": {}
+ }
+}
