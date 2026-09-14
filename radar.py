@@ -19,7 +19,10 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+
 from datetime import date, timedelta
+
+import blogs
 
 USER_AGENT = "daily-discover/1.0"
 TIMEOUT = 20
@@ -124,15 +127,32 @@ def fetch_github_releases(get=None, repos=GH_WATCH_REPOS):
     return out
 
 
-def build_radar(get=None):
-    """三个源各自独立容错。全挂就返回空壳 —— 页面上那一块显示「今天没有」,
-    帖子流完全不受影响。"""
-    radar = {"hn": [], "github_trending": [], "github_releases": []}
-    for key, fn in (("hn", fetch_hn),
-                    ("github_trending", fetch_github_trending),
-                    ("github_releases", fetch_github_releases)):
+EMPTY_RADAR = {"hn": [], "github_trending": [], "github_releases": [], "paulgraham": []}
+
+
+def build_radar(get=None, pg_get=None):
+    """各源独立容错。全挂就返回空壳 —— 页面上那一块显示「今天没有」,
+    帖子流完全不受影响。
+
+    pg_get 单独一个注入点,不能和 get 合并:本模块的 get 返回**已解析的 JSON**,
+    而 Paul Graham 那条抓的是 HTML 文本,同一个 get 喂不了两种消费者。
+
+    **注入了 get 就意味着「不许碰网络」**:这时没给 pg_get 就整条跳过 PG,
+    而不是让它落回默认取数器。否则测试里注入了 get 仍会静默打真实 HTTP ——
+    实测就是这么让整套测试从 0.1s 变成 22s 的。
+    """
+    sources = [("hn", fetch_hn, get),
+               ("github_trending", fetch_github_trending, get),
+               ("github_releases", fetch_github_releases, get)]
+    # PG 没有任何可用时间戳,进不了时间线 —— 榜单块本来就是「此刻的状态」
+    # 而不是「最近 36 小时发生了什么」,正好放他
+    if pg_get is not None or get is None:
+        sources.append(("paulgraham", blogs.fetch_pg_latest, pg_get))
+
+    radar = dict(EMPTY_RADAR)
+    for key, fn, doer in sources:
         try:
-            radar[key] = fn(get=get)
+            radar[key] = fn(get=doer)
         except Exception as exc:  # noqa: BLE001
             _warn(f"榜单 {key} 不可用,跳过(帖子流不受影响): {exc}")
     return radar

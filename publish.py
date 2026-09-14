@@ -23,7 +23,8 @@ def build_shard(date, posts, stats, market, radar=None):
         "stats": stats,
         "posts": [p.to_dict() for p in ordered],
         "market": market,
-        "radar": radar or {"hn": [], "github_trending": [], "github_releases": []},
+        "radar": radar or {"hn": [], "github_trending": [], "github_releases": [],
+                           "paulgraham": []},
     }
 
 

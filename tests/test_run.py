@@ -10,7 +10,7 @@ def P(pid, ts, channel="twitter"):
 
 
 
-EMPTY_RADAR = {"hn": [], "github_trending": [], "github_releases": []}
+EMPTY_RADAR = {"hn": [], "github_trending": [], "github_releases": [], "paulgraham": []}
 
 class TestCollect(unittest.TestCase):
     def test_drops_older_than_cutoff(self):
@@ -155,7 +155,7 @@ class TestNoRealNetwork(unittest.TestCase):
         with mock.patch.object(radar.urllib.request, "urlopen",
                                side_effect=AssertionError("测试里不许打真网络")):
             self.assertEqual(radar.build_radar(),
-                             {"hn": [], "github_trending": [], "github_releases": []})
+                             {"hn": [], "github_trending": [], "github_releases": [], "paulgraham": []})
 
 
 if __name__ == "__main__":

@@ -73,6 +73,18 @@ podcast:
   - {id: "626b46ea9cbbf0451cf5a962", name: "张小珺Jùn｜商业访谈录", note: ""}
   - {id: "648b0b641c48983391a63f98", name: "42章经", note: ""}
 
+blog:
+  # 大厂博客。都没有 RSS,适配器直接抓页面,id 只能是下面这两个之一。
+  # Anthropic:sitemap 出候选 + 列表页的 publishedOn 校正发布时间
+  #   (sitemap 的 lastmod 是「最后修改」,实测 claude-corps 真实发布于 2026-06-11
+  #    却标着 09-11,不校正会把几百篇旧文按今天灌进时间线)
+  # OpenAI:只能走 sitemap —— 文章页和列表页都 403,标题只能从 slug 反推
+  - {id: "anthropic", name: "Anthropic", note: "news + engineering"}
+  - {id: "openai", name: "OpenAI", note: "company + engineering"}
+  # Paul Graham 不在这里:他没有任何可用时间戳(无 Last-Modified、无 sitemap、
+  # 无 RSS,正文只有「September 2026」月粒度),进不了需要 36h 截断的时间线。
+  # 他在榜单块里,见 radar.py 的 paulgraham 段。
+
 # linkedin: 暂缺。2026-09-13 实测 TikHub 的 LinkedIn 全线 400(响应明示不扣费),
 #   证据在 tests/fixtures/linkedin_400_blocked.json。TikHub 修好后加回本节即可,
 #   适配器工作量约等于小红书那个。

@@ -106,12 +106,24 @@ class TestGithub(unittest.TestCase):
 
 
 class TestBuildRadar(unittest.TestCase):
-    def test_merges_all_three(self):
+    def test_merges_every_source(self):
         get = scripted({"hn.algolia": HN_PAYLOAD, "search/repositories": GH_ITEMS,
                         "releases/latest": RELEASE})
-        r = radar.build_radar(get=get)
-        self.assertEqual(sorted(r), ["github_releases", "github_trending", "hn"])
-        self.assertTrue(r["hn"] and r["github_trending"] and r["github_releases"])
+        pg_index = '<html><a href="powerful.html">Making Startups Powerful</a></html>'
+        r = radar.build_radar(get=get,
+                              pg_get=lambda u: pg_index if "articles" in u else "September 2026")
+        self.assertEqual(sorted(r),
+                         ["github_releases", "github_trending", "hn", "paulgraham"])
+        self.assertTrue(all(r.values()))
+
+    def test_pg_uses_its_own_injection_point(self):
+        """本模块的 get 返回已解析的 JSON,PG 那条要的是 HTML 文本 ——
+        合成一个注入点会让其中一边永远解析失败。"""
+        get = scripted({"hn.algolia": HN_PAYLOAD, "search/repositories": GH_ITEMS,
+                        "releases/latest": RELEASE})
+        r = radar.build_radar(get=get)          # 注入了 get 但没给 pg_get
+        self.assertEqual(r["paulgraham"], [])   # 整条跳过,不落回默认取数器
+        self.assertTrue(r["hn"])
 
     def test_one_source_down_leaves_the_others(self):
         get = scripted({"search/repositories": GH_ITEMS, "releases/latest": RELEASE},
@@ -127,7 +139,7 @@ class TestBuildRadar(unittest.TestCase):
             raise RuntimeError("all down")
 
         r = radar.build_radar(get=boom)
-        self.assertEqual(r, {"hn": [], "github_trending": [], "github_releases": []})
+        self.assertEqual(r, {"hn": [], "github_trending": [], "github_releases": [], "paulgraham": []})
 
     def test_default_get_sends_nonempty_user_agent(self):
         captured = []

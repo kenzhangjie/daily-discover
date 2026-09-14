@@ -4,6 +4,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
+import blogs
 import dedup
 import models
 import publish
@@ -23,6 +24,7 @@ DEFAULT_FETCHERS = {
     "wechat": tikhub.fetch_wechat,
     "rss": rss.fetch_rss,                # Substack / 个人博客,任何自带 feed 的人
     "podcast": xiaoyuzhou.fetch_xiaoyuzhou,
+    "blog": blogs.fetch_blog,      # Anthropic / OpenAI,没有 RSS 只能直接抓
 }
 
 
