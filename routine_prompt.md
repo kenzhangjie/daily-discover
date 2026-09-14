@@ -7,12 +7,21 @@
 已设置的环境变量:`TIKHUB_API_KEY`、`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、
 `R2_SECRET_ACCESS_KEY`、`GH_TOKEN`。**绝不要打印它们的值**,只输出状态码/成败/字节数。
 
+⚠️ 这条不只是「别 echo」:**调试时不要用 `curl -v` / `-sv`**。`-v` 会把整个请求头
+打进日志,`Authorization: token ...` 就跟着进去了(2026-09-14 实测被这样泄露过一次)。
+要看请求为什么失败,用 `-w '%{http_code}'` 看状态码、`-D -` 只看**响应**头。
+
 ---
 
 ## Step 1 — 下载脚本与名单
 
 沙盒的代理对 `api.github.com` 和 `git clone` 有按仓库门禁,但 `raw.githubusercontent.com`
 可用(2026-07-08 实测)。所以逐个文件按 raw URL 下载,失败退 R2 公网副本。
+
+**本仓库实际走的是 R2 那条路。**`GH_TOKEN` 是细粒度 PAT,只授权了 `kenzhangjie/claude`,
+对 `kenzhangjie/daily-discover` 的 raw 返回 404(2026-09-14 实测,同一次请求里
+claude 仓库的文件是 200)。R2 副本由本仓库的 GitHub Action 在每次 push 后自动同步。
+所以 Step 1 里看到 `OK r2(fallback)` 是**正常状态**,不是故障,不用报警。
 
 ```bash
 set -uo pipefail

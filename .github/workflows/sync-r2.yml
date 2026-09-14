@@ -1,0 +1,34 @@
+name: sync code to R2
+
+# 云 routine 取文件时先试 raw.githubusercontent.com,404 再退 R2。
+# 本仓库的 raw 对 routine 是 404 —— GH_TOKEN 是细粒度 PAT,只授权了
+# kenzhangjie/claude(2026-09-14 实测)。所以 R2 这条路是实际生效的那条,
+# 每次 push 必须同步,否则 routine 会一直跑着旧代码和旧名单。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.py"
+      - "sources.yaml"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 同步到 R2 的 code/ 前缀
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: python3 sync_to_r2.py
+      - name: 验证公网可读
+        run: |
+          R2="https://pub-42a2b5c1ec984024833f48ca358f4571.r2.dev"
+          for f in run.py sources.yaml; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$R2/code/$f")
+            echo "code/$f -> HTTP $code"
+            [ "$code" = "200" ] || exit 1
+          done
