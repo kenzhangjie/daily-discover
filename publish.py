@@ -47,10 +47,15 @@ class IndexFetchFailed(RuntimeError):
 
 
 def fetch_index(get=None):
-    """拉线上现有 index。只有「文件确实不存在」(HTTPError 404,或 R2 public
-    桶对不存在的 key 也可能返回的 403,一并当作"不存在")才返回空骨架。
+    """拉线上现有 index。只有「文件确实不存在」(HTTPError **404**)才返回空骨架。
 
-    其他任何失败 —— 网络错误、超时、5xx、JSON 解析失败 —— 都必须抛出
+    403 **不算不存在**。原来把它一并当成不存在,配上没带 UA 的 _default_get
+    (Cloudflare 对 `Python-urllib` 一律 403),结果是每次运行都拿到空骨架、
+    每次都把历史清成只剩当天 —— 2026-09-15 发现 discover/2026-09-14.json
+    好端端在桶里,却已经不在索引里了。这个兜底本来是为了防这件事,却成了
+    干这件事的那条路。R2 对真正不存在的 key 回的是 404,不是 403。
+
+    其他任何失败 —— 网络错误、超时、5xx、403、JSON 解析失败 —— 都必须抛出
     IndexFetchFailed,不能吞掉:index 是唯一的目录,一旦在网络抖动时把它
     静默替换成空骨架,历史日期就会从索引里永久消失(分片还在 R2,但页面
     再也找不到),宁可今天不更新,也不能清空历史。
@@ -59,7 +64,7 @@ def fetch_index(get=None):
     try:
         raw = doer(f"{R2_PUBLIC}/discover/index.json")
     except urllib.error.HTTPError as e:
-        if e.code in (404, 403):
+        if e.code == 404:
             return {"days": [], "authors": []}
         raise IndexFetchFailed(f"index.json 拉取失败(HTTP {e.code}): {e}") from e
     except Exception as e:
@@ -70,8 +75,17 @@ def fetch_index(get=None):
         raise IndexFetchFailed(f"index.json 解析失败: {e}") from e
 
 
+USER_AGENT = "daily-discover/1.0"
+
+
 def _default_get(url):
-    with urllib.request.urlopen(url, timeout=30) as resp:
+    """**必须带 UA。**R2 的 pub-*.r2.dev 前面那层 Cloudflare 对 urllib 的默认
+    `Python-urllib/3.x` 直接回 403(2026-09-15 实测:不带 UA 403、随便带一个
+    就 200)。而 fetch_index 曾把 403 当成「文件不存在」,于是每一次运行都从
+    空骨架开始 —— 历史日期从索引里一天天消失,分片还躺在桶里却再也没人指向它。
+    radar.py 的 Polymarket 403 是同一个病:注入的 get 测不到默认取数器。"""
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=30) as resp:
         return resp.read()
 
 

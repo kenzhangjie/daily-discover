@@ -75,13 +75,43 @@ class TestFetchIndex(unittest.TestCase):
         self.assertEqual(idx["days"], [])
         self.assertEqual(idx["authors"], [])
 
-    def test_returns_empty_skeleton_when_403(self):
-        # R2 public 桶对不存在的 key 也可能回 403,当作"不存在"处理
+    def test_raises_on_403_instead_of_wiping_history(self):
+        """403 **不是**「不存在」。这条用例原来断言的正是那个 bug:
+        它把 403 当成不存在,配上没带 UA 的 _default_get(Cloudflare 一律 403),
+        每次运行都从空骨架开始,历史一天天被清掉 —— 2026-09-15 实测
+        discover/2026-09-14.json 还在桶里,却已经不在索引里。
+        真正不存在的 key,R2 回的是 404。"""
         def forbidden(url):
             raise urllib.error.HTTPError(url, 403, "Forbidden", None, None)
-        idx = publish.fetch_index(get=forbidden)
-        self.assertEqual(idx["days"], [])
-        self.assertEqual(idx["authors"], [])
+        with self.assertRaises(publish.IndexFetchFailed):
+            publish.fetch_index(get=forbidden)
+
+    def test_default_get_sends_nonempty_user_agent(self):
+        """不带 UA 就是 403。注入的 get 永远测不到默认取数器,所以这道闸
+        必须直接盯着 _default_get 造出来的那个 Request。"""
+        captured = []
+
+        class _Resp:
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *a):
+                return False
+
+            def read(self_inner):
+                return b"{}"
+
+        def fake_urlopen(req, timeout=None):
+            captured.append(req)
+            return _Resp()
+
+        orig = publish.urllib.request.urlopen
+        publish.urllib.request.urlopen = fake_urlopen
+        try:
+            publish._default_get("https://example.invalid/x")
+        finally:
+            publish.urllib.request.urlopen = orig
+        self.assertTrue(captured[0].get_header("User-agent"))
 
     def test_raises_on_http_500(self):
         def server_error(url):

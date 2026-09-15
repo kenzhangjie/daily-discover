@@ -76,6 +76,7 @@ python3 - <<'PY'
 import json
 idx=json.load(open('/tmp/idx.json')); sh=json.load(open('/tmp/shard.json'))
 print("index 最新一天:", idx["days"][0] if idx.get("days") else "无")
+print("index 天数:", len(idx.get("days") or []), [d["date"] for d in idx.get("days") or []])
 print("分片 date:", sh.get("date"), "| posts:", len(sh.get("posts") or []))
 print("stats:", json.dumps(sh.get("stats"), ensure_ascii=False))
 print("market: polymarket", len((sh.get("market") or {}).get("polymarket") or []),
@@ -87,6 +88,10 @@ PY
 核对这几点,对不上就在报告里点名:
 - 分片的 `date` 等于今天的北京日期
 - `index.json` 的第一天就是今天,`total` 与分片里 `posts` 的条数一致
+- **`index 天数` 不能比昨天少。**只看「最新一天对不对」是看不出历史在丢的 ——
+  2026-09-15 那次就是:两次运行都报「全绿」,而 `discover/2026-09-14.json`
+  已经好端端躺在桶里却不在索引里了,页面上「加载更早一天」永远不出现。
+  天数掉了就在报告里显眼写出来,不要因为当天数据对得上就判全绿。
 - `stats` 里每个渠道都要有 `ok` 字段。**`count:0, ok:true`(今天真没人发)和
   `ok:false`(接口挂了)是两回事**,后者要在报告里显眼列出。
   订阅/播客这类低频源大多数日子就是 `count:0, ok:true`,那是正常的,不要报成故障。

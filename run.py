@@ -121,10 +121,19 @@ def main(argv=None):
     existing["authors"] = authors
     day_entry = {"date": beijing, "total": len(posts),
                  "channels": {ch: st["count"] for ch, st in stats.items()}}
-    publish.upload_r2("discover/index.json", publish.merge_index(existing, day_entry))
+    merged = publish.merge_index(existing, day_entry)
+    # 索引是唯一的目录,它缩过一次水(见 publish.fetch_index 的注释):分片还在桶里,
+    # 索引却不再指向它,页面上表现为「加载更早一天」永远不出现 —— 没有任何报错。
+    # 把天数打进日志,下一次缩水当场看得见,不用等人发现按钮没了。
+    before = len(existing.get("days") or [])
+    if len(merged["days"]) < before:
+        print(f"WARN 索引天数 {before} → {len(merged['days'])},历史在丢",
+              file=sys.stderr)
+    publish.upload_r2("discover/index.json", merged)
 
     print(f"共 {len(posts)} 条,TikHub 调用 {client.calls} 次")
     print(f"已上传 {shard_key} 与 discover/index.json")
+    print(f"索引 {len(merged['days'])} 天: {[d['date'] for d in merged['days']]}")
     print(f"stats: {stats}")
     return 0
 
