@@ -107,6 +107,21 @@ podcast:
      feed: "https://api.substack.com/feed/podcast/10845.rss"}
   - {id: "acquired", name: "Acquired", note: "Ben Gilbert & David Rosenthal",
      feed: "https://feeds.transistor.fm/acquired"}
+  - {id: "semianalysis", name: "SemiAnalysis Weekly", note: "Dylan Patel 团队",
+     feed: "https://anchor.fm/s/10fbee758/podcast/rss"}
+  - {id: "nopriors", name: "No Priors", note: "Sarah Guo & Elad Gil / Conviction",
+     feed: "https://feeds.megaphone.fm/nopriors"}
+  - {id: "latentspace", name: "Latent Space", note: "swyx & Alessio,AI 工程",
+     feed: "https://api.substack.com/feed/podcast/1084089.rss"}
+  - {id: "dwarkesh", name: "Dwarkesh Podcast", note: "Dwarkesh Patel",
+     feed: "https://apple.dwarkesh-podcast.workers.dev/feed.rss"}
+  - {id: "cogrev", name: "The Cognitive Revolution", note: "Nathan Labenz & Erik Torenberg",
+     feed: "https://feeds.megaphone.fm/RINTP3108857801"}
+  # 硅谷坐标 Silicon Valley Vector(Apple id 1882518109)暂缺:Apple 的公开
+  #   lookup / search 接口查不到它(不带国家和 us/cn/tw/jp 都试过,一律 0 条),
+  #   而 Apple 页面上抠到的 feedUrl 属于推荐位里的别家节目 —— 实测那个
+  #   feeds.fireside.fm/latetalk/rss 是「晚点聊 LateTalk」,不是它。
+  #   要加的话得从别处拿到它真正的 feed 地址,或者它的小宇宙播客页 id。
   # ⚠️ BG2 更得很少:播客 feed 和 YouTube 频道都停在 2026-06-11(同一集),
   #    共 44 集。不是换平台,就是本来更得少。留着,真更了就自动进来;
   #    在此之前 BG2 的内容主要靠 twitter 名单里的 Brad Gerstner。

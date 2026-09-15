@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """按名字查播客,打印一行可以直接贴进 sources.yaml 的 podcast 条目。
 
-    python3 tools/podfind.py "Dwarkesh"
-    python3 tools/podfind.py "a16z" --all      # 列出全部候选,不只第一个
+    python3 tools/podfind.py "Dwarkesh"                    # 按名字搜
+    python3 tools/podfind.py "a16z" --all                  # 列出全部候选
+    python3 tools/podfind.py 1668002688                    # 按 Apple id 直查
+    python3 tools/podfind.py https://podcasts.apple.com/jp/podcast/x/id958230465
 
 走 Apple 的公开目录接口(免 key、免登录)。Apple 只是**目录**:它不存节目,
 只存作者自己那个 feed 的地址 —— 所以返回里的 `feedUrl` 才是真源,
@@ -24,6 +26,7 @@ import urllib.request
 
 UA = "daily-discover/1.0"
 SEARCH = "https://itunes.apple.com/search"
+LOOKUP = "https://itunes.apple.com/lookup"
 TIMEOUT = 25
 # 抓 feed 本身要宽得多:libsyn 从国内出去经常十几二十秒才有第一个字节
 # (2026-09-15 实测 20VC 那个 feed 在 25 秒超时下失败,而同一地址在云沙盒里秒回)。
@@ -44,7 +47,19 @@ def _get(url, timeout=TIMEOUT, retries=1):
     raise last
 
 
-def search(term, limit=5):
+_ID_RE = re.compile(r"(?:^|/id)(\d{6,})\s*$")
+
+
+def resolve(term, limit=5):
+    """term 可以是名字、Apple id、或者整条 podcasts.apple.com 链接。
+
+    给了 id 就走 lookup(精确,不会搜岔);只有名字才走 search。
+    Apple 链接里的国家段(/tw/ /us/ /jp/)无所谓 —— id 是全球唯一的,
+    lookup 不带国家也查得到。"""
+    m = _ID_RE.search(term.strip())
+    if m:
+        q = urllib.parse.urlencode({"id": m.group(1)})
+        return json.loads(_get(f"{LOOKUP}?{q}")).get("results") or []
     q = urllib.parse.urlencode({"term": term, "entity": "podcast", "limit": limit})
     return json.loads(_get(f"{SEARCH}?{q}")).get("results") or []
 
@@ -78,13 +93,13 @@ def slug(name):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("term", help="播客名字,随便写个大概的")
+    ap.add_argument("term", help="播客名字 / Apple id / podcasts.apple.com 链接")
     ap.add_argument("--all", action="store_true", help="列出全部候选")
     args = ap.parse_args(argv)
 
-    rows = search(args.term)
+    rows = resolve(args.term)
     if not rows:
-        print(f"Apple 目录里搜不到「{args.term}」—— 可能它只有 YouTube,"
+        print(f"Apple 目录里找不到「{args.term}」—— 可能它只有 YouTube,"
               f"那走 README 里 YouTube 那条路。", file=sys.stderr)
         return 1
 
