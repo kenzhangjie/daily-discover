@@ -107,8 +107,8 @@ podcast:
      feed: "https://api.substack.com/feed/podcast/10845.rss"}
   - {id: "acquired", name: "Acquired", note: "Ben Gilbert & David Rosenthal",
      feed: "https://feeds.transistor.fm/acquired"}
-  # ⚠️ BG2 的 feed 自 2026-03-15 起就没更新过(Apple 目录里只有这一个地址,
-  #    他们大概改成 YouTube 优先了)。留着,真更了就自动进来;
+  # ⚠️ BG2 更得很少。播客 feed 停在 2026-03-15,YouTube 频道停在 2026-06-11
+  #    (两边都查过了 —— 不是换平台了,就是本来更得少)。留着,真更了就自动进来;
   #    在此之前 BG2 的内容主要靠 twitter 名单里的 Brad Gerstner。
   - {id: "bg2", name: "BG2Pod", note: "Brad Gerstner & Bill Gurley",
      feed: "https://anchor.fm/s/f06c2370/podcast/rss"}
