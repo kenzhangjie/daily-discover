@@ -32,8 +32,8 @@
 | `sources.yaml` | **关注名单 + Polymarket 设置。日常只改这个文件。** |
 | `tikhub.py` | Twitter / 小红书 / 公众号,走 TikHub |
 | `xueqiu.py` | 雪球。**不走 TikHub**(它没有雪球),直连 `api.xueqiu.com` |
-| `rss.py` | 自带 RSS/Atom 的源 |
-| `xiaoyuzhou.py` | 小宇宙播客 |
+| `rss.py` | 自带 RSS/Atom 的源(也被播客渠道复用) |
+| `xiaoyuzhou.py` | 小宇宙播客(它没有公开 RSS,只能抓 `__NEXT_DATA__`) |
 | `blogs.py` | Anthropic / OpenAI 博客(都没有 RSS),外加榜单块里的 Paul Graham |
 | `models.py` | 统一的 `Post` 模型 + 名单读取 |
 | `dedup.py` | 转发去重(正文哈希,保留最早的一条) |
@@ -119,6 +119,10 @@ R2_ACCESS_KEY_ID=<k> R2_SECRET_ACCESS_KEY=<s> python3 run.py
   后半截被静默吃掉,几个月没人发现。
 - **stats 要区分 `count:0, ok:true`(今天真没人发)与 `ok:false`(接口挂了)。**
   缺了这个字段页面就分不清「没有」和「没抓到」。
+- **播客 / 订阅 / 博客要用更长的窗口。** 它们是周更级的,36 小时意味着一周里有六天
+  这个渠道整个是空的 —— 2026-09-15 实测两个小宇宙播客最新一集是 12 天和 17 天前,
+  `stats` 记 `0, ok:true`,如实,但页面上等于这个渠道不存在。`run.SLOW_CHANNELS`
+  给它们 7 天。侧栏的渠道名单也要写死,空了灰着,否则连「我订了播客」都看不出来。
 - **36h 窗口 + 按天分片** ⇒ 同一条帖子会出现在相邻两天的分片里,页面必须按
   `post.id` 跨天去重,日期档也要按帖子自己的时间戳算而不是分片文件名。
 
