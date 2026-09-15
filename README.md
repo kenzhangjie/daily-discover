@@ -43,6 +43,26 @@
 | `run.py` | 主入口 |
 | `sync_to_r2.py` | **只**给 Actions 用:算 GitHub 榜单写进 R2(沙盒够不着 github.com) |
 | `routine_prompt.md` | 云 routine 的 prompt 真源。改完要同步到 routine 面板 |
+| `tools/podfind.py` | 按名字查播客,打印一行能直接贴进 `sources.yaml` 的条目 |
+
+## 加一个播客
+
+```bash
+python3 tools/podfind.py "Dwarkesh"        # 第一个候选
+python3 tools/podfind.py "a16z" --all      # 全部候选
+```
+
+它走 Apple 的公开目录接口(免 key),打印作者、托管商、集数、**最新一集日期**,
+外加一行可以直接贴进 `sources.yaml` 的 `podcast:` 条目。
+
+最新一集日期是最该看的一行:节目在 Apple 目录里好端端挂着、feed 却几个月没更新,
+是常态(BG2 就是,共 44 集,最新一集停在 2026-06-11)。
+
+Apple 目录里搜不到的(纯 YouTube 频道)才走另一条路 —— 取频道页 HTML 里的
+`"externalId":"UC..."`(**不是 `"channelId"`**,那个会命中推荐位的别家频道),
+拼成 `https://www.youtube.com/feeds/videos.xml?channel_id=UC...`。注意 YouTube
+频道 feed 给的是那个频道的**所有视频**,含切片 —— 2026-09-15 实测 20VC 的频道
+近 15 条里 VC 正片 0 条,全是足球和板球。有播客 feed 就别用 YouTube。
 
 ## 跑
 

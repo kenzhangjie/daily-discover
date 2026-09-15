@@ -97,8 +97,8 @@ podcast:
   # 否则一周里有六天这个渠道整个是空的(2026-09-15 实测两个小宇宙最新一集是
   # 12 天和 17 天前)。帖子仍按自己的发布时间排序分档,不会假装是今天发的。
   #
-  # 找英文播客的 feed:https://itunes.apple.com/search?term=<名字>&entity=podcast
-  # 返回里的 feedUrl 就是,比在官网上翻靠谱。
+  # 加新的:python3 tools/podfind.py "<名字>" —— 它打印的最后两行就是这里的格式,
+  # 并且会告诉你最新一集是什么时候(节目挂在目录里但 feed 早就不更了,是常态)。
   - {id: "626b46ea9cbbf0451cf5a962", name: "张小珺Jùn｜商业访谈录", note: ""}
   - {id: "648b0b641c48983391a63f98", name: "42章经", note: ""}
   - {id: "20vc", name: "20VC", note: "Harry Stebbings",
@@ -107,8 +107,8 @@ podcast:
      feed: "https://api.substack.com/feed/podcast/10845.rss"}
   - {id: "acquired", name: "Acquired", note: "Ben Gilbert & David Rosenthal",
      feed: "https://feeds.transistor.fm/acquired"}
-  # ⚠️ BG2 更得很少。播客 feed 停在 2026-03-15,YouTube 频道停在 2026-06-11
-  #    (两边都查过了 —— 不是换平台了,就是本来更得少)。留着,真更了就自动进来;
+  # ⚠️ BG2 更得很少:播客 feed 和 YouTube 频道都停在 2026-06-11(同一集),
+  #    共 44 集。不是换平台,就是本来更得少。留着,真更了就自动进来;
   #    在此之前 BG2 的内容主要靠 twitter 名单里的 Brad Gerstner。
   - {id: "bg2", name: "BG2Pod", note: "Brad Gerstner & Bill Gurley",
      feed: "https://anchor.fm/s/f06c2370/podcast/rss"}

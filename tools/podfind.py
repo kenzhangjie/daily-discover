@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""按名字查播客,打印一行可以直接贴进 sources.yaml 的 podcast 条目。
+
+    python3 tools/podfind.py "Dwarkesh"
+    python3 tools/podfind.py "a16z" --all      # 列出全部候选,不只第一个
+
+走 Apple 的公开目录接口(免 key、免登录)。Apple 只是**目录**:它不存节目,
+只存作者自己那个 feed 的地址 —— 所以返回里的 `feedUrl` 才是真源,
+托管商是 libsyn / substack / transistor / anchor / simplecast 里的哪个,
+取决于作者当初选了谁,跟我们无关。
+
+id 这个东西**用不上**:search 一次就把 feedUrl 给了,不需要再拿 id 去 lookup。
+打印它只是方便你去 podcasts.apple.com/…/id<数字> 核对是不是同一个节目。
+
+顺带拉一次 feed 报最新一集的日期 —— 播客「还活着吗」比什么都重要:
+BG2 在 Apple 目录里好端端的,feed 却停在 2026-03。加之前先看这一行。
+"""
+import argparse
+import json
+import re
+import sys
+import urllib.parse
+import urllib.request
+
+UA = "daily-discover/1.0"
+SEARCH = "https://itunes.apple.com/search"
+TIMEOUT = 25
+
+
+def _get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        return resp.read()
+
+
+def search(term, limit=5):
+    q = urllib.parse.urlencode({"term": term, "entity": "podcast", "limit": limit})
+    return json.loads(_get(f"{SEARCH}?{q}")).get("results") or []
+
+
+def latest(feed_url):
+    """返回 (集数, 最新一集日期字符串)。拉不到就说拉不到,不猜。
+
+    **日期必须从第一个 <item> 里面取**,不能对整篇 XML 做全局匹配:很多 feed
+    在 channel 级也有一个 <pubDate>,全局匹配的第 0 个是它、第 1 个才是最新一集;
+    而另一些 feed(anchor.fm)根本没有 channel 级那个,于是同一份代码在两种 feed
+    上分别拿到「最新一集」和「第二新一集」。2026-09-15 就是这么把 BG2 的
+    2026-06-11 读成了 2026-03-15 —— 差了一整集,结论差了三个月。"""
+    try:
+        xml = _get(feed_url).decode("utf-8", "replace")
+    except Exception as exc:  # noqa: BLE001
+        return None, f"拉不到({exc})"
+    blocks = re.findall(r"<item[ >](.*?)</item>", xml, re.S) or \
+        re.findall(r"<entry[ >](.*?)</entry>", xml, re.S)
+    if not blocks:
+        return 0, "feed 里一集都没有"
+    m = re.search(r"<pubDate>(.*?)</pubDate>", blocks[0]) or \
+        re.search(r"<published>(.*?)</published>", blocks[0])
+    return len(blocks), (m.group(1).strip() if m else "没有日期字段")
+
+
+def slug(name):
+    s = re.sub(r"[^a-z0-9]+", "", name.lower())
+    return s[:12] or "podcast"
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("term", help="播客名字,随便写个大概的")
+    ap.add_argument("--all", action="store_true", help="列出全部候选")
+    args = ap.parse_args(argv)
+
+    rows = search(args.term)
+    if not rows:
+        print(f"Apple 目录里搜不到「{args.term}」—— 可能它只有 YouTube,"
+              f"那走 README 里 YouTube 那条路。", file=sys.stderr)
+        return 1
+
+    for it in (rows if args.all else rows[:1]):
+        name = it.get("collectionName") or ""
+        feed = it.get("feedUrl")
+        author = it.get("artistName") or ""
+        print(f"\n{name}")
+        print(f"  作者      {author}")
+        print(f"  Apple id  {it.get('collectionId')}"
+              f"   https://podcasts.apple.com/podcast/id{it.get('collectionId')}")
+        if not feed:
+            print("  feed      **没有公开**(作者在 Apple 后台藏了),这个源加不进来")
+            continue
+        n, newest = latest(feed)
+        print(f"  托管在    {urllib.parse.urlparse(feed).netloc}")
+        print(f"  共 {n if n is not None else '?'} 集,最新一集 {newest}")
+        print("  贴进 sources.yaml 的 podcast: 下面 ——")
+        print(f'  - {{id: "{slug(name)}", name: "{name[:40]}", note: "{author[:40]}",')
+        print(f'     feed: "{feed}"}}')
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
