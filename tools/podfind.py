@@ -25,12 +25,23 @@ import urllib.request
 UA = "daily-discover/1.0"
 SEARCH = "https://itunes.apple.com/search"
 TIMEOUT = 25
+# 抓 feed 本身要宽得多:libsyn 从国内出去经常十几二十秒才有第一个字节
+# (2026-09-15 实测 20VC 那个 feed 在 25 秒超时下失败,而同一地址在云沙盒里秒回)。
+# 这里慢一点无所谓 —— 这是个手动跑的工具,不是每天那条流水线。
+FEED_TIMEOUT = 60
+FEED_RETRIES = 2
 
 
-def _get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read()
+def _get(url, timeout=TIMEOUT, retries=1):
+    last = None
+    for _ in range(retries):
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+    raise last
 
 
 def search(term, limit=5):
@@ -47,7 +58,8 @@ def latest(feed_url):
     上分别拿到「最新一集」和「第二新一集」。2026-09-15 就是这么把 BG2 的
     2026-06-11 读成了 2026-03-15 —— 差了一整集,结论差了三个月。"""
     try:
-        xml = _get(feed_url).decode("utf-8", "replace")
+        xml = _get(feed_url, timeout=FEED_TIMEOUT,
+                   retries=FEED_RETRIES).decode("utf-8", "replace")
     except Exception as exc:  # noqa: BLE001
         return None, f"拉不到({exc})"
     blocks = re.findall(r"<item[ >](.*?)</item>", xml, re.S) or \
