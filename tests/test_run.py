@@ -143,7 +143,7 @@ class TestLoadMarket(unittest.TestCase):
         # 触发真实 ImportError,而不是靠 mock 假装失败
         missing_here = "/tmp/does-not-exist-daily-discover-test"
         market = run.load_market(missing_here)
-        self.assertEqual(market, {"polymarket": [], "ipo": []})
+        self.assertEqual(market, {"polymarket": [], "ipo": [], "earnings": []})
 
 
 class TestNoRealNetwork(unittest.TestCase):

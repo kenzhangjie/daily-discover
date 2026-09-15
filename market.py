@@ -1,5 +1,14 @@
 """市场数据:只取日历,不取解读。
 
+产出三块,页面上各占一格:polymarket / ipo(A股申购 + 港股上市)/ earnings(美股财报)。
+ipo 与 earnings 拆开是因为它们回答的是两个问题 —— 「什么时候能打新」和
+「哪天出财报」,混在一张表里两种 note 交替出现,扫一眼分不出哪行是哪种。
+
+**港股财报没有源。**fetch_market.py 只有 Nasdaq 的美股日历;2026-09-15 探过
+东财 datacenter 的几个 reportName,要么不存在,要么(RPT_HKF10_FN_MAININDICATOR)
+是已发布财报的历史财务指标,不是「未来哪天发」的前瞻日历。watchlist 里的中概
+(BABA/PDD/TCOM)是美股 ADR,已被美股那条覆盖;缺的是纯港股(腾讯 0700 一类)。
+
 打新日历是「前瞻」(未来日期),与帖子流的「回顾」方向相反 ——
 所以它在页面上必须独立成块,不能倒序混进时间线。
 
@@ -44,7 +53,12 @@ import sys
 import urllib.parse
 import urllib.request
 
-US_LOOKAHEAD_DAYS = 7  # 跟 A股 upcoming 窗口(今日起 7 天)保持一致
+US_LOOKAHEAD_DAYS = 14
+# 财报和打新拆成两块后,两者的窗口不必再对齐(原来是 7 天,跟 A股 upcoming 一致)。
+# 2026-09-15 实测 watchlist 里那 25 家在各窗口的命中数:7 天 1 家、14 天 1 家、
+# 21 天 2 家、28 天 2 家 —— 现在正处在财报季之间,下一波是 10 月下旬。
+# 每多一天多打一次 Nasdaq(约 2.4s),28 天要 70s;14 天是「未来两周」这个自然
+# 窗口与运行时长的折中。块在淡季稀疏是**如实**,不是故障。
 
 USER_AGENT = "daily-discover/1.0"
 
@@ -224,6 +238,8 @@ def build_market(fm, polymarket=None, pm_config=None):
             ipo.append({"name": row["name"], "date": listing.replace("/", "-"),
                         "note": "港股上市"})
 
+    earnings = []
+
     try:
         wl_path = os.path.join(os.path.dirname(fm.__file__), "watchlist.yaml")
         with open(wl_path, encoding="utf-8") as f:
@@ -242,11 +258,20 @@ def build_market(fm, polymarket=None, pm_config=None):
                 _warn(f"fetch_us_calendar({day}) 失败,跳过这一天: {e}")
                 continue
             for row in rows:
-                if row.get("name"):
-                    ipo.append({"name": row["name"], "date": day.isoformat(),
-                                "note": "美股财报"})
+                if not row.get("name") and not row.get("symbol"):
+                    continue
+                # note 写「代码 + 盘前/盘后」。块标题已经写了「财报」,每行再重复
+                # 一遍是浪费;代码是 Ken 实际认的东西,时段决定当晚还是次日看。
+                when = row.get("time") or ""
+                sym = row.get("symbol") or ""
+                earnings.append({
+                    "name": row.get("name") or sym,
+                    "date": day.isoformat(),
+                    "note": " ".join(x for x in (sym, when) if x and x != "未知"),
+                })
 
     ipo.sort(key=lambda e: e["date"])
+    earnings.sort(key=lambda e: e["date"])
 
     if polymarket is None:
         try:
@@ -257,4 +282,4 @@ def build_market(fm, polymarket=None, pm_config=None):
     else:
         polymarket = list(polymarket)
 
-    return {"polymarket": polymarket, "ipo": ipo}
+    return {"polymarket": polymarket, "ipo": ipo, "earnings": earnings}

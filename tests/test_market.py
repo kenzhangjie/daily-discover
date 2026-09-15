@@ -132,28 +132,47 @@ class TestBuildMarket(unittest.TestCase):
         m = market.build_market(NoUpcomingFM, polymarket=[])
         self.assertEqual(m["ipo"], [])
 
+    def test_earnings_is_its_own_list_not_mixed_into_ipo(self):
+        """打新和财报回答的是两个问题(「什么时候能打新」vs「哪天出财报」),
+        混在一张表里两种 note 交替出现,扫一眼分不出哪行是哪种。"""
+        m = market.build_market(FakeFM, polymarket=[])
+        self.assertEqual({e["name"] for e in m["ipo"]}, {"某公司", "某港股"})
+        self.assertEqual({e["name"] for e in m["earnings"]}, {"苹果"})
+
     def test_us_earnings_entry_has_name_date_note(self):
         m = market.build_market(FakeFM, polymarket=[])
-        us = [e for e in m["ipo"] if e["name"] == "苹果"]
+        us = [e for e in m["earnings"] if e["name"] == "苹果"]
         self.assertEqual(len(us), 1)
         self.assertEqual(us[0]["date"], "2026-09-14")
-        self.assertEqual(us[0]["note"], "美股财报")
+
+    def test_earnings_note_carries_symbol_and_session(self):
+        """块标题已经写了「财报」,每行再重复一遍是浪费;代码是 Ken 实际认的东西,
+        盘前/盘后决定当晚还是次日看。"""
+        us = [e for e in market.build_market(FakeFM, polymarket=[])["earnings"]][0]
+        self.assertIn("AAPL", us["note"])
+
+    def test_earnings_note_omits_unknown_session(self):
+        class UnknownTimeFM(FakeFM):
+            @staticmethod
+            def fetch_us_calendar(day, watch):
+                if day.isoformat() != "2026-09-14":
+                    return []
+                return [{"symbol": "AAPL", "name": "苹果", "time": "未知"}]
+
+        us = market.build_market(UnknownTimeFM, polymarket=[])["earnings"][0]
+        self.assertEqual(us["note"], "AAPL")
 
     def test_us_earnings_does_not_leak_eps_fields(self):
         # 只取日历,不取解读——eps_forecast/last_year_eps 等不该出现在条目里
         m = market.build_market(FakeFM, polymarket=[])
-        us = [e for e in m["ipo"] if e["name"] == "苹果"][0]
+        us = [e for e in m["earnings"] if e["name"] == "苹果"][0]
         self.assertEqual(set(us.keys()), {"name", "date", "note"})
 
-    def test_three_sources_merged_and_sorted(self):
-        # A股(09-15) / 港股(09-16) / 美股(09-14) 三源混排,仍按 date 升序
+    def test_each_list_sorted_by_date(self):
         m = market.build_market(FakeFM, polymarket=[])
-        dates = [e["date"] for e in m["ipo"]]
-        self.assertEqual(dates, sorted(dates))
-        self.assertEqual(
-            {e["name"] for e in m["ipo"]},
-            {"某公司", "某港股", "苹果"},
-        )
+        for key in ("ipo", "earnings"):
+            dates = [e["date"] for e in m[key]]
+            self.assertEqual(dates, sorted(dates), key)
 
     def test_us_calendar_failure_does_not_crash_other_two_calendars(self):
         class UsDownFM(FakeFM):
@@ -200,7 +219,7 @@ class TestBuildMarket(unittest.TestCase):
         m = market.build_market(MidDayFailFM, polymarket=[])
         # 完整天数都该被调用过,不是在第 3 天(第 4 次调用)就停下
         self.assertEqual(len(calls), market.US_LOOKAHEAD_DAYS + 1)
-        names = {e["name"] for e in m["ipo"] if e["note"] == "美股财报"}
+        names = {e["name"] for e in m["earnings"]}
         self.assertIn("第0天公司", names)
         self.assertIn("第7天公司", names)
 

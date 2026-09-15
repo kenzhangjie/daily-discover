@@ -41,7 +41,7 @@ def load_market(here, pm_config=None):
         return market_mod.build_market(fm, pm_config=pm_config)
     except Exception as e:
         warn(f"市场数据不可用,跳过(帖子流不受影响): {e}")
-        return {"polymarket": [], "ipo": []}
+        return {"polymarket": [], "ipo": [], "earnings": []}
 
 
 def collect(client, sources, cutoff_iso, fetchers=None):
