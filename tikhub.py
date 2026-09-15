@@ -1,5 +1,6 @@
 """TikHub 客户端。成本闸在这里收口 —— 调用计数超限立刻抛错,
 不靠调用方自觉。"""
+import html
 import json
 import sys
 import threading
@@ -110,6 +111,16 @@ def _extract_media(media):
     return out
 
 
+def _text(raw):
+    """TikHub 的正文是 **HTML 转义过的**:推文里的 `&` 到手是 `&amp;`、
+    `->` 是 `-&gt;`。页面用 textContent 渲染(刻意不走 innerHTML),所以
+    这些实体会原样显示给人看 —— 实测 2026-09-15 那天 124 条里 8 条中招。
+    在入口处还原一次,存进分片的就是人写的那串字符。
+
+    rss / xueqiu / xiaoyuzhou 三个适配器早就这么做了,只有本模块的三个渠道漏了。"""
+    return html.unescape(raw or "")
+
+
 def _as_int(value):
     """engagement 数值统一转 int:likes/replies 本来就是 int,views 是字符串。
     缺失(None/空串)归 0,不能让一条推文的脏数据炸掉整批。"""
@@ -123,7 +134,7 @@ def parse_twitter(payload, person):
     for t in (payload.get("data") or {}).get("timeline") or []:
         tid = str(t.get("tweet_id"))
         try:
-            text = t.get("text") or ""
+            text = _text(t.get("text"))
             m = RT_RE.match(text)
             out.append(models.Post(
                 id=f"twitter:{tid}",
@@ -167,8 +178,8 @@ def parse_xhs(payload, person):
     for idx, n in enumerate(notes):
         note_id = n.get("id") or f"index:{idx}"
         try:
-            title = (n.get("display_title") or n.get("title") or "").strip()
-            desc = (n.get("desc") or "").strip()
+            title = _text(n.get("display_title") or n.get("title")).strip()
+            desc = _text(n.get("desc")).strip()
             if not desc:
                 text = title
             elif desc.startswith(title):
@@ -224,8 +235,8 @@ def parse_wechat(payload, person):
         # 一次推送可含头条 + 次条,展平成多条
         for idx, d in enumerate(details):
             try:
-                title = d.get("title") or ""
-                digest = d.get("digest") or ""
+                title = _text(d.get("title"))
+                digest = _text(d.get("digest"))
                 out.append(models.Post(
                     id=f"wechat:{msg_id}:{idx}",
                     channel="wechat",

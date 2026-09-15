@@ -134,6 +134,14 @@ class TestParseTwitter(unittest.TestCase):
         self.assertTrue(p.ts.endswith("Z"))
         self.assertTrue(p.url.startswith("https://x.com/paulg/status/"))
 
+    def test_html_entities_are_decoded(self):
+        """TikHub 的正文是 HTML 转义过的。页面用 textContent 渲染,不还原的话
+        读者看到的就是字面的 `-&gt;` —— 2026-09-15 线上 124 条里 8 条这样。"""
+        payload = copy.deepcopy(self.payload)
+        payload["data"]["timeline"][0]["text"] = "Parking ticket -&gt; @bot &amp; done"
+        posts = tikhub.parse_twitter(payload, {"id": "paulg", "name": "Paul Graham"})
+        self.assertEqual(posts[0].text, "Parking ticket -> @bot & done")
+
     def test_marks_retweet(self):
         posts = tikhub.parse_twitter(self.payload, {"id": "paulg", "name": "Paul Graham"})
         rts = [p for p in posts if p.repost_of]
@@ -206,6 +214,13 @@ class TestParseWechat(unittest.TestCase):
         posts = tikhub.parse_wechat(self.payload, {"id": "gh_363b924965e9", "name": "人民日报"})
         self.assertTrue(posts[0].text)
         self.assertTrue(posts[0].url.startswith("http"))
+
+    def test_html_entities_are_decoded(self):
+        posts = tikhub.parse_wechat(self.payload, {"id": "gh_x", "name": "某号"})
+        payload = copy.deepcopy(self.payload)
+        payload["data"]["articles"][0]["appMsg"]["detailInfo"][0]["title"] = "A &amp; B"
+        posts = tikhub.parse_wechat(payload, {"id": "gh_x", "name": "某号"})
+        self.assertTrue(posts[0].text.startswith("A & B"))
 
     def test_ids_unique_within_one_push(self):
         posts = tikhub.parse_wechat(self.payload, {"id": "gh_363b924965e9", "name": "人民日报"})
