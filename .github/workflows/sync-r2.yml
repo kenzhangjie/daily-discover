@@ -1,29 +1,26 @@
-name: sync code to R2
+name: sync github radar to R2
 
-# 云 routine 取文件时先试 raw.githubusercontent.com,404 再退 R2。
-# 本仓库的 raw 对 routine 是 404 —— GH_TOKEN 是细粒度 PAT,只授权了
-# kenzhangjie/claude(2026-09-14 实测)。所以 R2 这条路是实际生效的那条,
-# 每次 push 必须同步,否则 routine 会一直跑着旧代码和旧名单。
+# 云沙盒的代理对 github.com 网页、codeload、api.github.com 的普通 HTTP GET
+# 一律 403(2026-09-15 实测),而榜单块的「GitHub 新星 / 新版本」只能从那几个
+# 地方拿。Actions runner 跑在 GitHub 自己的机器上没有这个限制,所以由它算好
+# 摆到 R2,routine 去读 R2。
+#
+# 2026-09-15 仓库转公开后,**源码同步那一半已经删掉**:raw.githubusercontent.com
+# 不带 token 直接 200,routine 从 GitHub 直接拉。所以这个 workflow 不再需要
+# 监听 push —— 它现在只跟「今天的 release / trending 是什么」有关,与代码无关。
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "*.py"
-      - "sources.yaml"
-  # 榜单块的 GitHub 两组也在这个脚本里算。云沙盒够不着 github.com,
-  # 只有 Actions runner 能拿到,所以要定时刷 —— 否则 release 出了新版本,
-  # 页面上还停在上次 push 那天的版本号。01:00 UTC 那次 routine 之前刷一遍。
+  # routine 在 01:00 UTC 跑,提前 20 分钟刷一遍,否则页面停在上次跑的那天。
   schedule:
     - cron: "40 0 * * *"
   workflow_dispatch:
 
 jobs:
-  sync:
+  radar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 同步到 R2 的 code/ 前缀
+      - name: 算 GitHub 榜单并写入 R2
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -32,11 +29,6 @@ jobs:
       - name: 验证公网可读
         run: |
           R2="https://pub-42a2b5c1ec984024833f48ca358f4571.r2.dev"
-          for f in run.py sources.yaml; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$R2/code/$f")
-            echo "code/$f -> HTTP $code"
-            [ "$code" = "200" ] || exit 1
-          done
           code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$R2/radar/github.json")
           echo "radar/github.json -> HTTP $code"
           [ "$code" = "200" ] || exit 1

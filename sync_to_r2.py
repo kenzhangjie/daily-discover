@@ -1,14 +1,16 @@
-"""把源码同步到 R2 的 code/ 前缀,给云 routine 做取文件的兜底。
+"""把榜单块的 GitHub 两组(新星 / 新版本)算好写到 R2,给云 routine 读。
 
-为什么需要:云 routine 走 raw.githubusercontent.com 取文件,但 GH_TOKEN 是个
-细粒度 PAT,只授权了 kenzhangjie/claude 那一个仓库 —— 本仓库的 raw 返回 404
-(2026-09-14 实测,对照组 claude 仓库同时是 200)。给 PAT 加授权要人去 GitHub
-面板点,而 R2 这条路本仓库自己就能维护。
+**这个桥拆不掉。**云沙盒的代理对 github.com 网页、codeload、api.github.com
+的普通 HTTP GET 一律 403(2026-09-15 实测),而 trending 和 releases 只能从
+那几个地方拿。Actions runner 跑在 GitHub 自己的机器上,没有这个限制。
 
-两条路同时在:routine 先试 GitHub,404 再退 R2。哪条通都能跑。
+**原来还有一件事:把源码同步到 R2 的 code/ 前缀当取文件的兜底。已经删掉了** ——
+2026-09-15 仓库转为公开,raw.githubusercontent.com 不带 token 直接 200,
+routine 从 GitHub 直接拉,改完 sources.yaml 下一次运行就生效,不用等同步。
+留着那份副本反而危险:主路径坏掉时它会安静地拿旧代码把今天跑完,报告照样全绿。
 
 用法:本地 `python3 sync_to_r2.py`(读环境变量里的 R2 凭证),
-或让 .github/workflows/sync-r2.yml 在每次 push 后自动跑。
+或让 .github/workflows/sync-r2.yml 定时跑。
 """
 import json
 import os
@@ -17,13 +19,6 @@ import urllib.parse
 import urllib.request
 
 import publish
-
-FILES = ["models.py", "tikhub.py", "xueqiu.py", "rss.py", "xiaoyuzhou.py",
-         "blogs.py", "dedup.py", "market.py", "radar.py", "publish.py",
-         "run.py", "sources.yaml"]
-
-CONTENT_TYPE = {".py": "text/x-python", ".yaml": "text/yaml"}
-
 
 GH_API = "https://api.github.com"
 GH_WATCH_REPOS = ("anthropics/claude-code", "openai/openai-python")
@@ -80,20 +75,6 @@ def build_github_radar():
 
 
 def main():
-    here = os.path.dirname(os.path.abspath(__file__))
-    missing = [f for f in FILES if not os.path.exists(os.path.join(here, f))]
-    if missing:
-        print(f"FATAL 本地缺文件: {missing}", file=sys.stderr)
-        return 1
-    for name in FILES:
-        with open(os.path.join(here, name), "rb") as fh:
-            body = fh.read()
-        ext = os.path.splitext(name)[1]
-        publish._default_put(f"code/{name}", body,
-                             content_type=CONTENT_TYPE.get(ext, "text/plain"))
-        print(f"OK code/{name}  {len(body)}B")
-    print(f"已同步 {len(FILES)} 个文件到 R2 的 code/ 前缀")
-
     radar = build_github_radar()
     publish._default_put("radar/github.json",
                          json.dumps(radar, ensure_ascii=False).encode("utf-8"))
