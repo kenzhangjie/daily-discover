@@ -56,7 +56,6 @@ xueqiu:
 
 xhs:
   # id = 小红书用户 id(24 位十六进制)。主页 URL xiaohongshu.com/user/profile/<id>
-  # ⚠️ 下面这条是占位的测试数据,不是你指定的 —— 换成真人或整段删掉
   - {id: "6065978600000000010076c6", name: "大卫翁", note: "大卫翁"}
   - {id: "5d44e926000000001100d215", name: "参考答案阅览室", note: "参考答案阅览室"}
   - {id: "5597b4c562a60c59483354e2", name: "Vivi女士在创业", note: "Vivi女士在创业"}
@@ -66,7 +65,6 @@ xhs:
 
 wechat:
   # id = 公众号的 gh_ 开头原始 id,或账号名
-  # ⚠️ 同样是占位数据
   - {id: "gh_00eb01f8cbff", name: "Monolith砺思资本", note: "Monolith砺思资本"}
   - {id: "gh_56d462c1a72f", name: "Z Potentials", note: "Z Potentials"}
   - {id: "gh_62c02a7947f7", name: "随机小分队", note: "随机小分队"}
