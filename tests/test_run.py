@@ -42,6 +42,69 @@ class TestCollect(unittest.TestCase):
         self.assertTrue(stats["wechat"]["ok"])
 
 
+class TestSlowChannels(unittest.TestCase):
+    """播客/订阅/博客是周更级的。36 小时窗口会让它们一周里有六天整个是空的 ——
+    2026-09-15 实测两个小宇宙播客最新一集是 12 天和 17 天前。"""
+
+    def test_slow_channel_keeps_a_week_while_twitter_keeps_36h(self):
+        fetchers = {
+            "podcast": lambda c, p: [P("ep", "2026-09-10T00:00:00Z", "podcast")],
+            "twitter": lambda c, p: [P("tw", "2026-09-10T00:00:00Z", "twitter")],
+        }
+        sources = {"podcast": [{"id": "x"}], "twitter": [{"id": "y"}]}
+        posts, stats = run.collect(None, sources, "2026-09-14T00:00:00Z",
+                                   fetchers=fetchers,
+                                   slow_cutoff_iso="2026-09-08T00:00:00Z")
+        self.assertEqual([p.id for p in posts], ["ep"])
+        self.assertEqual(stats["podcast"]["count"], 1)
+        self.assertEqual(stats["twitter"]["count"], 0)
+
+    def test_every_slow_channel_is_a_real_channel(self):
+        """打错一个名字不会报错,只会让那个渠道悄悄退回 36 小时。"""
+        for ch in run.SLOW_CHANNELS:
+            self.assertIn(ch, run.DEFAULT_FETCHERS)
+
+    def test_omitting_slow_cutoff_falls_back_to_the_normal_one(self):
+        fetchers = {"podcast": lambda c, p: [P("ep", "2026-09-10T00:00:00Z", "podcast")]}
+        posts, _ = run.collect(None, {"podcast": [{"id": "x"}]},
+                               "2026-09-14T00:00:00Z", fetchers=fetchers)
+        self.assertEqual(posts, [])
+
+
+class TestFetchPodcastRouting(unittest.TestCase):
+    """中英文播客在名单上是同一个渠道,靠有没有 feed 分流。"""
+
+    def test_feed_goes_to_rss_but_keeps_the_podcast_channel(self):
+        """走 rss.py 但 channel 必须是 podcast —— 否则英文播客会在页面上
+        显示成「订阅」,和小宇宙那几个分到两个渠道去。"""
+        seen = {}
+
+        def fake_rss(client, person, get=None, channel="rss"):
+            seen["channel"] = channel
+            return [P("e", "2026-09-10T00:00:00Z", channel)]
+
+        with mock.patch.object(run.rss, "fetch_rss", fake_rss):
+            out = run.fetch_podcast(None, {"id": "20vc", "feed": "https://f/x.xml"})
+        self.assertEqual(seen["channel"], "podcast")
+        self.assertEqual(out[0].channel, "podcast")
+
+    def test_no_feed_goes_to_xiaoyuzhou(self):
+        calls = []
+        with mock.patch.object(run.xiaoyuzhou, "fetch_xiaoyuzhou",
+                               lambda c, p, get=None: calls.append(p) or []):
+            run.fetch_podcast(None, {"id": "626b46ea9cbbf0451cf5a962"})
+        self.assertEqual(calls[0]["id"], "626b46ea9cbbf0451cf5a962")
+
+    def test_rss_channel_defaults_to_rss_for_the_plain_rss_list(self):
+        """同一个 fetch_rss 服务两个渠道,默认值不能被上面那条改掉。"""
+        import rss as rss_mod
+        rows = rss_mod.parse_rss(
+            "<item><title>T</title><link>https://a/1</link>"
+            "<pubDate>Mon, 08 Sep 2026 00:00:00 GMT</pubDate></item>",
+            {"id": "s", "name": "S"})
+        self.assertEqual(rows[0].channel, "rss")
+
+
 class TestBalanceFailureDegrades(unittest.TestCase):
     def test_balance_failure_still_completes_fetch_and_upload(self):
         # 余额查询是纯告警用途,不该有一票否决权 —— 它挂了,抓取和上传照常跑完。

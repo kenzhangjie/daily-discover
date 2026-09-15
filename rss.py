@@ -122,7 +122,7 @@ def parse_rss(xml, person, channel="rss"):
     return out
 
 
-def fetch_rss(client, person, get=None):
+def fetch_rss(client, person, get=None, channel="rss"):
     """client 是 TikHub 客户端,这里用不到,保留只为与其他适配器同签名。
 
     整源失败往上抛,由 run.collect 记进 stats —— 吞掉的话渠道会被误判成 ok,
@@ -130,4 +130,4 @@ def fetch_rss(client, person, get=None):
     """
     doer = get or _default_get
     feed = person.get("feed") or person["id"]
-    return parse_rss(doer(feed), person)
+    return parse_rss(doer(feed), person, channel=channel)

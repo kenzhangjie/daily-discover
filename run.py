@@ -15,7 +15,28 @@ import xiaoyuzhou
 import xueqiu
 
 CUTOFF_HOURS = 36
+# 播客 / 订阅 / 博客是**周更级**的。36 小时的窗口意味着一周里有六天完全看不到
+# 它们:2026-09-15 实测,两个小宇宙播客最新一集分别是 12 天和 17 天前,stats 记
+# `0, ok:true` —— 如实,但页面上等于这个渠道不存在,连侧栏都没有它。
+# 给低频渠道 7 天窗口:一集播出后在页面上留一周,哪天打开都看得到本周更新了什么。
+# 帖子仍按自己的时间戳排序和分档,不会假装是今天发的。
+SLOW_CUTOFF_HOURS = 24 * 7
+SLOW_CHANNELS = ("podcast", "rss", "blog")
 CONCURRENCY = 4
+
+
+def fetch_podcast(client, person, get=None):
+    """播客有两种源,名单上是同一个渠道:
+    - 小宇宙**没有公开 RSS**,只能抓页面里的 __NEXT_DATA__(xiaoyuzhou.py)
+    - 英文播客一律有 RSS(20VC / Lenny's / Acquired ...),走通用的 rss.py
+
+    按 person 里有没有 `feed` 分流。这样 sources.yaml 里中英文播客混在一张
+    名单上,页面上也是同一个「播客」渠道 —— 读者不关心它后面是哪种协议。
+    """
+    if person.get("feed"):
+        return rss.fetch_rss(client, person, get=get, channel="podcast")
+    return xiaoyuzhou.fetch_xiaoyuzhou(client, person, get=get)
+
 
 DEFAULT_FETCHERS = {
     "twitter": tikhub.fetch_twitter,
@@ -23,7 +44,7 @@ DEFAULT_FETCHERS = {
     "xhs": tikhub.fetch_xhs,
     "wechat": tikhub.fetch_wechat,
     "rss": rss.fetch_rss,                # Substack / 个人博客,任何自带 feed 的人
-    "podcast": xiaoyuzhou.fetch_xiaoyuzhou,
+    "podcast": fetch_podcast,   # 小宇宙 + 英文 RSS 播客,见上面的分流
     "blog": blogs.fetch_blog,      # Anthropic / OpenAI,没有 RSS 只能直接抓
 }
 
@@ -44,8 +65,11 @@ def load_market(here, pm_config=None):
         return {"polymarket": [], "ipo": [], "earnings": []}
 
 
-def collect(client, sources, cutoff_iso, fetchers=None):
+def collect(client, sources, cutoff_iso, fetchers=None, slow_cutoff_iso=None):
+    """cutoff_iso 是常规窗口;低频渠道(SLOW_CHANNELS)用 slow_cutoff_iso。
+    不传 slow 就退回常规值,测试里想只验一个窗口时不必两个都构造。"""
     fetchers = fetchers or DEFAULT_FETCHERS
+    slow_cutoff_iso = slow_cutoff_iso or cutoff_iso
     all_posts, stats = [], {}
     for channel, people in sources.items():
         fetch = fetchers.get(channel)
@@ -62,7 +86,8 @@ def collect(client, sources, cutoff_iso, fetchers=None):
                 except Exception as exc:
                     errors.append(f"{person['id']}: {exc}")
                     warn(f"{channel} {person['id']} 抓取失败: {exc}")
-        fresh = [p for p in got if p.ts >= cutoff_iso]
+        limit = slow_cutoff_iso if channel in SLOW_CHANNELS else cutoff_iso
+        fresh = [p for p in got if p.ts >= limit]
         # 全员失败才算渠道挂了;部分失败仍算 ok,但把错误记下来
         ok = len(errors) < len(people) if people else True
         stats[channel] = {"count": len(fresh), "ok": ok}
@@ -90,9 +115,10 @@ def main(argv=None):
     if bal is not None and bal < 1.0:
         warn(f"TikHub 余额仅剩 ${bal:.2f},按 $0.1/天约够 {int(bal / 0.1)} 天")
 
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=CUTOFF_HOURS)
-              ).strftime("%Y-%m-%dT%H:%M:%SZ")
-    posts, stats = collect(client, sources, cutoff)
+    now = datetime.now(timezone.utc)
+    iso = lambda h: (now - timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    posts, stats = collect(client, sources, iso(CUTOFF_HOURS),
+                           slow_cutoff_iso=iso(SLOW_CUTOFF_HOURS))
     posts = dedup.dedup(posts)
 
     # count 要按去重后的口径重新统计,否则跟 index.total(同样是去重后)对不上;

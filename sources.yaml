@@ -87,10 +87,31 @@ rss:
   #   /engineering/rss.xml 全 404)
 
 podcast:
-  # 小宇宙。id = 播客页 URL xiaoyuzhoufm.com/podcast/<id> 里那串。
-  # 小宇宙没有公开 RSS,适配器直接读页面里的 __NEXT_DATA__。
+  # 中英文播客混在这一张名单上,页面上也是同一个「播客」渠道。
+  # 两种写法,run.fetch_podcast 按有没有 feed 分流:
+  #   无 feed → 小宇宙。id = 播客页 URL xiaoyuzhoufm.com/podcast/<id> 里那串。
+  #             小宇宙没有公开 RSS,适配器直接读页面里的 __NEXT_DATA__。
+  #   有 feed → 通用 RSS。id 随便取(做去重用),feed 才是真正要抓的地址。
+  #
+  # 播客是周更级的,所以 run.py 给 podcast/rss/blog 的是 **7 天**窗口而不是 36 小时 ——
+  # 否则一周里有六天这个渠道整个是空的(2026-09-15 实测两个小宇宙最新一集是
+  # 12 天和 17 天前)。帖子仍按自己的发布时间排序分档,不会假装是今天发的。
+  #
+  # 找英文播客的 feed:https://itunes.apple.com/search?term=<名字>&entity=podcast
+  # 返回里的 feedUrl 就是,比在官网上翻靠谱。
   - {id: "626b46ea9cbbf0451cf5a962", name: "张小珺Jùn｜商业访谈录", note: ""}
   - {id: "648b0b641c48983391a63f98", name: "42章经", note: ""}
+  - {id: "20vc", name: "20VC", note: "Harry Stebbings",
+     feed: "https://rss.libsyn.com/shows/61840/destinations/240976.xml"}
+  - {id: "lennys", name: "Lenny's Podcast", note: "Lenny Rachitsky",
+     feed: "https://api.substack.com/feed/podcast/10845.rss"}
+  - {id: "acquired", name: "Acquired", note: "Ben Gilbert & David Rosenthal",
+     feed: "https://feeds.transistor.fm/acquired"}
+  # ⚠️ BG2 的 feed 自 2026-03-15 起就没更新过(Apple 目录里只有这一个地址,
+  #    他们大概改成 YouTube 优先了)。留着,真更了就自动进来;
+  #    在此之前 BG2 的内容主要靠 twitter 名单里的 Brad Gerstner。
+  - {id: "bg2", name: "BG2Pod", note: "Brad Gerstner & Bill Gurley",
+     feed: "https://anchor.fm/s/f06c2370/podcast/rss"}
 
 blog:
   # 大厂博客。都没有 RSS,适配器直接抓页面,id 只能是下面这两个之一。
