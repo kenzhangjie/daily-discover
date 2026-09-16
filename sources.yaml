@@ -42,6 +42,8 @@ twitter:
   - {id: "jaminball", name: "Jamin Ball", note: "Altimeter Partner working with software"}
   - {id: "paulinebhyang", name: "Pauline Yang", note: "Partner @ Altimeter Capital."}
   - {id: "FredaDuan", name: "Freda Duan", note: "Investing @ Altimeter Capital"}
+  - {id: "AravSrinivas", name: "Aravind Srinivas", note: "Aravind Srinivas perplexity ceo"}
+
 
 xueqiu:
   # id = 雪球用户数字 id。主页 URL xueqiu.com/u/<id> 里的那串数字
@@ -73,6 +75,7 @@ wechat:
   - {id: "gh_8a38f53d29c0", name: "INDIGO数字镜像", note: "INDIGO数字镜像"}
   - {id: "gh_71356acaea28", name: "XVC和朋友们", note: "XVC和朋友们"} 
   - {id: "gh_d675dabf6d64", name: "深网腾讯新闻", note: "深网腾讯新闻"}
+  - {id: "qqtech", name: "腾讯科技", note: "腾讯科技"}
   - {id: "gh_a87beb311f62", name: "elsewhere别处发生", note: "elsewhere别处发生"}
   - {id: "gh_2804a946a0e2", name: "Founder Park", note: "Founder Park"}
 
