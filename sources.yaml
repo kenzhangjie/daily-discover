@@ -55,6 +55,13 @@ xueqiu:
   - {id: "1247347556", name: "大道无形我有型", note: "大道无形我有型"}
   - {id: "9887656769", name: "梁宏", note: "梁宏"}
   - {id: "6623660105", name: "刘成岗", note: "刘成岗"}
+  - {id: "1994842497", name: "一言不合打你鹅", note: "一言不合打你鹅"}
+  - {id: "9598793634", name: "陈达美股投资", note: "陈达美股投资"}
+  - {id: "1998357586", name: "伯言2020", note: "伯言2020"}
+  - {id: "3167081651", name: "forcode", note: "forcode"}
+  - {id: "3408310156", name: "胡涂的森林", note: "胡涂的森林"}
+  - {id: "1965894836", name: "PaulWu", note: "PaulWu"}
+
 
 xhs:
   # id = 小红书用户 id(24 位十六进制)。主页 URL xiaohongshu.com/user/profile/<id>
