@@ -117,21 +117,22 @@ class Asklear:
                 time.sleep(2 ** attempt)
         raise last
 
-    def estimate(self, task_code, payload, task_query=None):
-        body = {"task_code": task_code, "input": payload}
-        if task_query:
-            body["task_query"] = task_query
-        return self._call("POST", "/v1/collections/estimate", body)
+    def estimate(self, task_code, payload):
+        # 不发 task_query。MCP 收这个字段,**REST 不收** —— 2026-09-21 实测
+        # estimate 回 400 extra_forbidden。官方文档那句「REST calls may omit it
+        # and remain unattributed」读起来像可选,实际是这个端点压根不接受。
+        # 代价:REST 发起的任务在用量明细里没有任务归因,只能靠 idempotency_key
+        # 认出是谁发的。
+        return self._call("POST", "/v1/collections/estimate",
+                          {"task_code": task_code, "input": payload})
 
     def start(self, task_code, payload, quote_token, idempotency_key,
-              max_credits=None, task_query=None):
+              max_credits=None):
         body = {"task_code": task_code, "input": payload,
                 "quote_token": quote_token, "idempotency_key": idempotency_key}
         if max_credits is not None:
             body["max_credits"] = max_credits
-        if task_query:
-            body["task_query"] = task_query
-        return self._call("POST", "/v1/collections/jobs", body)
+        return self._call("POST", "/v1/collections/jobs", body)   # 同上,不发 task_query
 
     def wait(self, job_id, max_seconds=POLL_MAX_SECONDS, sleep=time.sleep):
         """轮询到终态。按服务端给的 poll_after_seconds 退避。
@@ -153,17 +154,17 @@ class Asklear:
         raise AsklearError(f"任务 {job_id} 超过 {max_seconds}s 仍未完成")
 
     def collect(self, task_code, payload, idempotency_key, max_credits=None,
-                task_query=None, sleep=time.sleep):
+                sleep=time.sleep):
         """估价 → 启动 → 等结果,一步到位。
 
         估价是免费的,但**必须先估**:start 要带 quote_token。
         """
-        quote = self.estimate(task_code, payload, task_query)
+        quote = self.estimate(task_code, payload)
         token = quote.get("quote_token")
         if not token:
             raise AsklearError(f"估价没返回 quote_token: {quote}")
         started = self.start(task_code, payload, token, idempotency_key,
-                             max_credits=max_credits, task_query=task_query)
+                             max_credits=max_credits)
         job_id = started.get("job_id")
         if not job_id:
             raise AsklearError(f"启动没返回 job_id: {started}")
@@ -266,7 +267,5 @@ def fetch_linkedin(client, person, asklear=None, sleep=time.sleep):
     day = time.strftime("%Y%m%d", time.gmtime())
     key = f"dd-linkedin-{person['id']}-{day}"
     got = api.collect(TASK_CODE, {"url": url}, key,
-                      max_credits=CREDITS_PER_CALL,
-                      task_query="daily discover 抓取关注名单的 LinkedIn 帖子",
-                      sleep=sleep)
+                      max_credits=CREDITS_PER_CALL, sleep=sleep)
     return parse_linkedin((got.get("result") or {}).get("data"), person)

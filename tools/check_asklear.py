@@ -9,9 +9,11 @@
 为什么值得单独写一个:适配器上线首跑要花 84 积分/人,而失败原因(key 没配 /
 域名没放行 / 路径错)都长得像同一个报错。这个脚本只打免费端点,把三件事分开。
 
-本地跑:
-    ASKLEAR_API_KEY=xxx python3 tools/check_asklear.py
-routine 里跑(验网络白名单):
+本地跑(key 从 ~/.config/keys.env 读,**不要写在命令行上** —— Asklear
+官方文档明写「不要把凭据写入命令参数、仓库、截图或共享日志」,命令行会
+留在 shell history 和会话记录里):
+    python3 tools/check_asklear.py
+routine 里跑(验网络白名单,key 从环境变量来):
     python3 tools/check_asklear.py
 """
 import os
@@ -24,10 +26,31 @@ import linkedin  # noqa: E402
 PROBE_URL = "https://www.linkedin.com/in/chamath"
 
 
+KEYS_ENV = os.path.expanduser("~/.config/keys.env")
+
+
+def _key_from_env_file(path=KEYS_ENV):
+    """从 keys.env 读 ASKLEAR_API_KEY。值可能带引号,要剥掉 ——
+    en-ken-solar 的 exa key 就踩过这个:sed 取出来的串比真值长两位。"""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                k, _, v = line.partition("=")
+                if k.strip() == "ASKLEAR_API_KEY":
+                    return v.strip().strip("\'\"")
+    except OSError:
+        pass
+    return None
+
+
 def main():
-    key = os.environ.get("ASKLEAR_API_KEY")
+    key = os.environ.get("ASKLEAR_API_KEY") or _key_from_env_file()
     if not key:
-        print("✗ ASKLEAR_API_KEY 没设", file=sys.stderr)
+        print(f"✗ 找不到 ASKLEAR_API_KEY:环境变量里没有,{KEYS_ENV} 里也没有",
+              file=sys.stderr)
+        print("  本地:echo 'ASKLEAR_API_KEY=\"...\"' >> ~/.config/keys.env",
+              file=sys.stderr)
+        print("  routine:在环境变量里加这一条", file=sys.stderr)
         return 2
     print(f"· ASKLEAR_API_KEY 已设(长度 {len(key)})")
     print(f"· BASE = {linkedin.BASE}")
@@ -48,8 +71,7 @@ def main():
 
     # ② 估价。免费,但走的是真正要用的那条 collections 路径
     try:
-        quote = api.estimate(linkedin.TASK_CODE, {"url": PROBE_URL},
-                             "daily discover 接线自检")
+        quote = api.estimate(linkedin.TASK_CODE, {"url": PROBE_URL})
     except Exception as e:  # noqa: BLE001
         print(f"✗ POST /v1/collections/estimate 失败: {e}", file=sys.stderr)
         return 1
