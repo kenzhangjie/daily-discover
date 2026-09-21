@@ -7,7 +7,8 @@ import sys
 
 TWITTER_FMT = "%a %b %d %H:%M:%S %z %Y"
 
-CHANNELS = ("twitter", "xueqiu", "xhs", "wechat", "rss", "podcast", "blog")
+CHANNELS = ("twitter", "xueqiu", "xhs", "wechat", "rss", "podcast", "blog",
+            "linkedin")
 
 # sources.yaml 里不是「关注的人」的段落。放在同一个文件里是因为它们同样由 Ken
 # 手改、同样靠 push 生效;但它们不是渠道,load_sources 要跳过而不是报「未知渠道」。

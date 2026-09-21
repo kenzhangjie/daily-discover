@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import blogs
 import dedup
+import linkedin
 import models
 import publish
 import radar as radar_mod
@@ -46,7 +47,36 @@ DEFAULT_FETCHERS = {
     "rss": rss.fetch_rss,                # Substack / 个人博客,任何自带 feed 的人
     "podcast": fetch_podcast,   # 小宇宙 + 英文 RSS 播客,见上面的分流
     "blog": blogs.fetch_blog,      # Anthropic / OpenAI,没有 RSS 只能直接抓
+    "linkedin": linkedin.fetch_linkedin,  # 走 Asklear,TikHub 的 LinkedIn 全线 400
 }
+
+
+def rotate_slots(sources, day_index=None):
+    """按 slot 轮询,返回**只用于抓取**的名单副本。
+
+    为什么要轮:LinkedIn 是 84 积分/次,全员每天拉 = 12 × 84 = 1008 积分/天,
+    别的渠道加起来才 $0.1/天。分四组每天只拉一组 → 252 积分/天。
+    LinkedIn 的 KOL 一周发 2-3 条,四天延迟够用;而且一次就返回 50 条、
+    跨度近四个月(2026-09-21 实测 chamath),拉勤了纯属浪费。
+
+    只影响抓谁,**不影响 sources 本身** —— main 里的 authors(侧栏"我的信息源
+    清单")仍按全量建。否则侧栏会一天只剩三个人,看着像名单被删了。
+
+    没有 slot 字段的条目每天都抓,所以其他渠道完全不受影响。
+    """
+    if day_index is None:
+        day_index = datetime.now(timezone.utc).timetuple().tm_yday
+    out = {}
+    for channel, people in sources.items():
+        slotted = [p for p in people if p.get("slot") is not None]
+        if not slotted:
+            out[channel] = people
+            continue
+        groups = sorted({int(p["slot"]) for p in slotted})
+        today = groups[day_index % len(groups)]
+        out[channel] = [p for p in people
+                        if p.get("slot") is None or int(p["slot"]) == today]
+    return out
 
 
 def warn(msg):
@@ -117,7 +147,8 @@ def main(argv=None):
 
     now = datetime.now(timezone.utc)
     iso = lambda h: (now - timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
-    posts, stats = collect(client, sources, iso(CUTOFF_HOURS),
+    # 抓取用轮询后的名单,authors(侧栏)仍用全量 sources
+    posts, stats = collect(client, rotate_slots(sources), iso(CUTOFF_HOURS),
                            slow_cutoff_iso=iso(SLOW_CUTOFF_HOURS))
     posts = dedup.dedup(posts)
 
