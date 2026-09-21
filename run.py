@@ -22,7 +22,12 @@ CUTOFF_HOURS = 36
 # 给低频渠道 7 天窗口:一集播出后在页面上留一周,哪天打开都看得到本周更新了什么。
 # 帖子仍按自己的时间戳排序和分档,不会假装是今天发的。
 SLOW_CUTOFF_HOURS = 24 * 7
-SLOW_CHANNELS = ("podcast", "rss", "blog")
+# linkedin 在这里不是因为它更得慢(虽然也慢:chamath 四个月 50 条,约一周三条),
+# 是因为它**四天才轮到一次**(见 rotate_slots)。36 小时窗口配四天轮询,等于每
+# 4 天里有 2.5 天发的帖永远进不来 —— 抓回来了,被截断悄悄丢掉,stats 还显示
+# ok:true count:0,看着就像「他这几天没发」。
+# 规矩:**窗口必须 ≥ 轮询周期**。四天轮一圈,七天窗口留了三天余量。
+SLOW_CHANNELS = ("podcast", "rss", "blog", "linkedin")
 CONCURRENCY = 4
 
 

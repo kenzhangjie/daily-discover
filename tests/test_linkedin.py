@@ -124,3 +124,12 @@ def test_轮询不改原名单():
     before = json.dumps(SOURCES, sort_keys=True)
     run.rotate_slots(SOURCES, day_index=2)
     assert json.dumps(SOURCES, sort_keys=True) == before
+
+
+def test_linkedin_的窗口必须不短于轮询周期():
+    """四天轮一次 + 36h 窗口 = 每 4 天有 2.5 天发的帖永远进不来。
+    抓回来了,被截断悄悄丢掉,stats 还是 ok:true count:0 —— 看着就像
+    「他这几天没发」。这条钉住「窗口 ≥ 轮询周期」。"""
+    assert "linkedin" in run.SLOW_CHANNELS
+    rotation_days = len({p["slot"] for p in SOURCES["linkedin"]})
+    assert run.SLOW_CUTOFF_HOURS / 24 >= rotation_days
