@@ -180,6 +180,48 @@ polymarket:
   min_volume: 10000   # lifetime 成交额低于此值的僵尸市场丢弃
   total_cap: 12       # 页面上这一块总共只显示这么多行
 
-# linkedin: 暂缺。2026-09-13 实测 TikHub 的 LinkedIn 全线 400(响应明示不扣费),
-#   证据在 tests/fixtures/linkedin_400_blocked.json。TikHub 修好后加回本节即可,
-#   适配器工作量约等于小红书那个。
+linkedin:
+  # id = vanity name。主页 URL linkedin.com/in/<id> 里的那段。
+  # 适配器拼成 https://www.linkedin.com/in/<id> 交给 Asklear。
+  #
+  # ⚠️ 全名单最贵的渠道。Asklear linkedin_user_posts_v1 固定 84 积分/次,
+  #    对比:Reddit / X 的同类任务 2 积分、抖音/公众号 3 积分、小红书 8 积分。
+  #    贵的原因是登录态 —— LinkedIn 所有列表接口都在登录墙后面,要养账号池
+  #    和住宅 IP;同平台的 post_detail(匿名页,为 SEO 开放)只要 2 积分。
+  #
+  # ⚠️ 错峰:全员每天拉 = 12 × 84 = 1008 积分/天,余额一天都撑不住。
+  #    改成按 slot 轮询,每天只拉 slot == (当天序号 % 4) 的那三个人:
+  #        3 × 84 = 252 积分/天,四天轮一圈。
+  #    LinkedIn 的 KOL 一周发 2-3 条是常态,四天延迟完全够用。
+  #    加人时手动指定 slot,让四组人数尽量均等。
+  #
+  # ⚠️ 上游同一端点也返回「此人评论过/点赞过的帖」,响应里没有可靠的种类字段,
+  #    所以拉回来的**不全是他自己发的**。适配器必须按 poster_linkedin_url 过滤。
+  #    另:author_name/author_url 对用户帖常为 null,显示名只能取本文件的 name。
+  #
+  # 翻页是 cursor 模式:data.has_more / data.next_cursor。
+  #
+  # 活跃度没法便宜地预筛:linkedin_user_profile_v1(14 积分)只返回
+  #   follower_count / connection_count / current_company / is_influencer,
+  #   没有任何「最近发帖」字段。谁是僵尸号只能看头几轮的实际产出再删。
+  - {id: "chamath",   slot: 0, name: "Chamath Palihapitiya", note: "Social Capital · All-In 播客"}
+  - {id: "deykhan",   slot: 0, name: "Deykhan Ten", note: "Higgsfield AI · 湾区 · 1.9w 关注"}
+  - {id: "kiwiyeah",  slot: 0, name: "", note: ""}
+
+  - {id: "mikekrieger", slot: 1, name: "Mike Krieger", note: "Instagram 联创 · Anthropic CPO(twitter: mikeyk 已覆盖)"}
+  - {id: "fionafung",   slot: 1, name: "", note: ""}
+  - {id: "dannichen1",  slot: 1, name: "", note: ""}
+
+  - {id: "bcherny",     slot: 2, name: "Boris Cherny", note: "Anthropic Claude Code Lead(twitter: bcherny 已覆盖)"}
+  - {id: "amashrabov",  slot: 2, name: "", note: ""}
+  - {id: "qingyun-cao-98043167", slot: 2, name: "", note: ""}
+
+  - {id: "elenaverna",    slot: 3, name: "Elena Verna", note: "增长顾问(twitter: ElenaVerna + rss 已覆盖)"}
+  - {id: "adilinthewild", slot: 3, name: "", note: ""}
+  - {id: "freda-d-025a3626", slot: 3, name: "", note: "疑似 Freda Duan @ Altimeter(twitter: FredaDuan),待确认"}
+
+  # 四位标了「已覆盖」的在 twitter 名单里已有,LinkedIn 内容通常重合度高,
+  # 每天多花 84×(当天命中的个数)。跑几轮看看重复率,不值就删。
+
+# TikHub 的 LinkedIn 走不通:2026-09-13 实测全线 400(响应明示不扣费),
+#   证据在 tests/fixtures/linkedin_400_blocked.json。所以本节改走 Asklear REST。
