@@ -43,6 +43,7 @@ twitter:
   - {id: "paulinebhyang", name: "Pauline Yang", note: "Partner @ Altimeter Capital."}
   - {id: "FredaDuan", name: "Freda Duan", note: "Investing @ Altimeter Capital"}
   - {id: "AravSrinivas", name: "Aravind Srinivas", note: "Aravind Srinivas perplexity ceo"}
+  - {id: "Khazix0918", name: "数字生命卡兹克", note: "数字生命卡兹克"}
 
 
 xueqiu:
@@ -61,7 +62,7 @@ xueqiu:
   - {id: "3167081651", name: "forcode", note: "forcode"}
   - {id: "3408310156", name: "胡涂的森林", note: "胡涂的森林"}
   - {id: "1965894836", name: "PaulWu", note: "PaulWu"}
-
+  - {id: "9089343523", name: "我是表好胚", note: "我是表好胚"}
 
 xhs:
   # id = 小红书用户 id(24 位十六进制)。主页 URL xiaohongshu.com/user/profile/<id>
