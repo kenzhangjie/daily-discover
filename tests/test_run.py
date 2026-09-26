@@ -105,15 +105,10 @@ class TestFetchPodcastRouting(unittest.TestCase):
         self.assertEqual(rows[0].channel, "rss")
 
 
-class TestBalanceFailureDegrades(unittest.TestCase):
-    def test_balance_failure_still_completes_fetch_and_upload(self):
-        # 余额查询是纯告警用途,不该有一票否决权 —— 它挂了,抓取和上传照常跑完。
-        class FakeClient:
-            calls = 3
-
-            def balance(self):
-                raise RuntimeError("balance endpoint 500")
-
+class TestMainCompletes(unittest.TestCase):
+    def test_main_fetches_and_uploads_without_tikhub(self):
+        # 2026-09-26 起没有渠道再走 TikHub:main 不该再构造它的客户端、
+        # 也不该再依赖 TIKHUB_API_KEY —— 不打任何 TikHub 的补丁也要跑完。
         from datetime import datetime, timezone
         fresh_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         fetchers = {
@@ -126,8 +121,7 @@ class TestBalanceFailureDegrades(unittest.TestCase):
         def fake_upload(key, payload, **kw):
             uploaded[key] = payload
 
-        with mock.patch("run.tikhub.TikHub", return_value=FakeClient()), \
-             mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
+        with mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
              mock.patch.object(run, "load_market", return_value={"polymarket": [], "ipo": []}), \
              mock.patch.object(run.radar_mod, "build_radar", return_value=EMPTY_RADAR), \
              mock.patch("publish.fetch_index", return_value={"days": [], "authors": []}), \
@@ -169,19 +163,12 @@ class TestStatsCountMatchesIndexTotal(unittest.TestCase):
             "wechat": lambda c, p: [],
         }
 
-        class FakeClient:
-            calls = 3
-
-            def balance(self):
-                return 5.0
-
         uploaded = {}
 
         def fake_upload(key, payload, **kw):
             uploaded[key] = payload
 
-        with mock.patch("run.tikhub.TikHub", return_value=FakeClient()), \
-             mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
+        with mock.patch.object(run, "DEFAULT_FETCHERS", fetchers), \
              mock.patch.object(run, "load_market", return_value={"polymarket": [], "ipo": []}), \
              mock.patch.object(run.radar_mod, "build_radar", return_value=EMPTY_RADAR), \
              mock.patch("publish.fetch_index", return_value={"days": [], "authors": []}), \

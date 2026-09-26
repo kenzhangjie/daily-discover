@@ -147,7 +147,9 @@ class Asklear:
             if status == "succeeded":
                 return got
             if status in ("failed", "cancelled", "expired"):
-                raise AsklearError(f"任务 {job_id} {status}: {got.get('error')}")
+                # 失败原因实测在 error_code(如 collection_failed),error 字段是空的
+                reason = got.get("error") or got.get("error_code")
+                raise AsklearError(f"任务 {job_id} {status}: {reason}")
             nap = float(got.get("poll_after_seconds") or 3)
             sleep(nap)
             waited += nap

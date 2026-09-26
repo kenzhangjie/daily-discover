@@ -1,4 +1,4 @@
-"""主入口。串起抓取 → 去重 → 分片 → 上传,并执行成本闸与余额告警。"""
+"""主入口。串起抓取 → 去重 → 分片 → 上传。"""
 import concurrent.futures
 import os
 import sys
@@ -11,7 +11,7 @@ import models
 import publish
 import radar as radar_mod
 import rss
-import tikhub
+import social
 import xiaoyuzhou
 import xueqiu
 
@@ -45,10 +45,11 @@ def fetch_podcast(client, person, get=None):
 
 
 DEFAULT_FETCHERS = {
-    "twitter": tikhub.fetch_twitter,
-    "xueqiu": xueqiu.fetch_xueqiu,   # 不走 TikHub,它没有雪球
-    "xhs": tikhub.fetch_xhs,
-    "wechat": tikhub.fetch_wechat,
+    # twitter / xhs / wechat 2026-09-26 从 TikHub 切到 Asklear(TikHub 欠费 402)
+    "twitter": social.fetch_twitter,
+    "xueqiu": xueqiu.fetch_xueqiu,   # 直连雪球,不走任何数据商
+    "xhs": social.fetch_xhs,
+    "wechat": social.fetch_wechat,
     "rss": rss.fetch_rss,                # Substack / 个人博客,任何自带 feed 的人
     "podcast": fetch_podcast,   # 小宇宙 + 英文 RSS 播客,见上面的分流
     "blog": blogs.fetch_blog,      # Anthropic / OpenAI,没有 RSS 只能直接抓
@@ -141,14 +142,8 @@ def main(argv=None):
     sources = models.load_sources(sources_path)
     settings = models.load_settings(sources_path)
 
-    client = tikhub.TikHub(os.environ.get("TIKHUB_API_KEY"))
-    try:
-        bal = client.balance()
-    except Exception as e:
-        warn(f"余额查询失败,跳过告警(不影响抓取): {e}")
-        bal = None
-    if bal is not None and bal < 1.0:
-        warn(f"TikHub 余额仅剩 ${bal:.2f},按 $0.1/天约够 {int(bal / 0.1)} 天")
+    # 没有渠道再走 TikHub 了。fetch(client, person) 的签名保留,client 传 None
+    client = None
 
     now = datetime.now(timezone.utc)
     iso = lambda h: (now - timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
@@ -193,7 +188,7 @@ def main(argv=None):
               file=sys.stderr)
     publish.upload_r2("discover/index.json", merged)
 
-    print(f"共 {len(posts)} 条,TikHub 调用 {client.calls} 次")
+    print(f"共 {len(posts)} 条")
     print(f"已上传 {shard_key} 与 discover/index.json")
     print(f"索引 {len(merged['days'])} 天: {[d['date'] for d in merged['days']]}")
     print(f"stats: {stats}")
